@@ -1,0 +1,11 @@
+/* === Main Page Layout === */
+.pageContainer {
+  padding-top: 60px; /* Height of the fixed header */
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+.content {
+  /* Remove top padding to reduce the gap, but keep side/bottom padding */
+  padding: 0 2rem 2rem 2rem;
+}

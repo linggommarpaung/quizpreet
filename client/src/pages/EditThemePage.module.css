@@ -1,0 +1,350 @@
+/* client/src/pages/EditThemePage.module.css */
+.adminContainer {
+    padding: 2rem;
+    background-color: #f9fafb;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+}
+
+.loadingContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.5rem;
+    color: #4b5563;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+    margin-right: 1rem;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.adminHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.themeNameEditor {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-grow: 1;
+    flex-wrap: wrap; 
+}
+
+.themeTitleInput {
+    font-size: 1.75rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.5rem;
+    flex-grow: 1;
+    min-width: 200px;
+}
+.themeTitleInput:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+
+.dateInputContainer {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap; 
+}
+
+.dateInputContainer label {
+    font-weight: 500;
+    color: #374151;
+    white-space: nowrap;
+}
+
+.dateInput {
+    padding: 0.5rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-family: inherit;
+}
+
+.headerActions {
+    display: flex;
+    gap: 1rem;
+}
+
+.navButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center; 
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+    color: white;
+}
+
+.saveButton {
+    background-color: #10b981;
+}
+.saveButton:hover {
+    background-color: #059669;
+}
+
+.addButton {
+    background-color: #4f46e5;
+}
+.addButton:hover {
+    background-color: #4338ca;
+}
+
+.navButton:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
+}
+
+.adminMain {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.unitListHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 1rem;
+}
+
+.unitListHeader h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.unitsList, .questionsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.unitAccordion {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: all 0.2s;
+}
+.unitAccordion:hover {
+    box-shadow: 0 1px 3px 0 rgba(0,0,0,0.07);
+}
+
+
+.unitItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    background-color: #f9fafb;
+    transition: background-color 0.2s;
+}
+
+.unitItem:hover {
+    background-color: #f3f4f6;
+}
+
+.unitInfo {
+    flex-grow: 1;
+}
+
+.unitInfo h4 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.unitInfo p {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.unitTitleInput {
+    font-size: 1.125rem;
+    font-weight: 600;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 0.3rem;
+    width: 80%;
+}
+
+.unitActions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.actionButton {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, color 0.2s;
+    color: #6b7280;
+}
+
+.actionButton:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+}
+
+.deleteButton:hover {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+.deleteMenuItem {
+    color: #ef4444 !important;
+}
+
+.saveButtonSmall {
+    color: #10b981;
+}
+.saveButtonSmall:hover {
+    background-color: #d1fae5;
+}
+
+.cancelButton {
+    color: #6b7280;
+}
+.cancelButton:hover {
+    background-color: #e5e7eb;
+}
+
+.addButtonSmall {
+    color: #4f46e5;
+}
+.addButtonSmall:hover {
+    background-color: #e0e7ff;
+}
+
+
+/* Questions Styling */
+.questionsContainer {
+    padding: 1rem 1.5rem;
+    background-color: #ffffff;
+    border-top: 1px solid #e5e7eb;
+}
+
+.questionItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+.questionItem:last-child {
+    border-bottom: none;
+}
+
+.questionInfo strong {
+    font-weight: 600;
+}
+
+.questionInfo ol {
+    padding-left: 1.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.noQuestions {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+
+/* Responsiveness */
+.mobileActions {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .adminContainer {
+        padding: 1rem;
+    }
+    .adminHeader, .unitListHeader {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .themeNameEditor {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+    .headerActions {
+        justify-content: center;
+        width: 100%;
+    }
+    .desktopActions {
+        display: none;
+    }
+    .mobileActions {
+        display: flex;
+    }
+    .unitItem {
+        padding: 1rem;
+    }
+    .unitInfo h4, .unitTitleInput {
+        font-size: 1rem;
+    }
+
+    /* --- Responsive Header Fixes --- */
+    .themeTitleInput {
+        font-size: 1.25rem; /* Adjusted font size */
+        width: 100%;
+        box-sizing: border-box; 
+    }
+
+    .dateInputContainer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+        width: 100%;
+    }
+
+    .dateInput {
+        width: 100%;
+        box-sizing: border-box; 
+    }
+
+    .navButton {
+        width: 100%;
+        box-sizing: border-box; 
+    }
+}

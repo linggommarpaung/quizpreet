@@ -1,0 +1,96 @@
+.dashboardContainer {
+  /* Remove top padding, but keep padding on other sides */
+  padding: 0 2rem 2rem 2rem;
+}
+
+.dashboardTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-color);
+  /* Add some top padding to the title itself for a little breathing room */
+  padding-top: 1rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.widgetsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.widgetCard {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  min-height: 120px; /* Added to increase card height */
+}
+
+.widgetCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px var(--shadow-color);
+}
+
+.widgetIcon {
+  font-size: 2.5rem;
+  margin-right: 1.5rem;
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.widgetInfo {
+  flex-grow: 1;
+}
+
+.widgetTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-color);
+}
+
+.widgetText {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.logoutWidget {
+  background-color: #ff6b6b;
+  color: #fff;
+}
+
+.logoutWidget .widgetIcon {
+  color: #fff;
+}
+
+.logoutWidget .widgetTitle {
+  color: #fff;
+}
+
+.logoutWidget .widgetText {
+  color: #fce4e4;
+}
+
+.profileWidget {
+  background-color: #5C6BC0; /* Indigo */
+  color: #fff;
+}
+
+.profileWidget .widgetIcon {
+  color: #fff;
+}
+
+.profileWidget .widgetTitle {
+  color: #fff;
+}
+
+.profileWidget .widgetText {
+  color: #E8EAF6; /* Lighter Indigo */
+}

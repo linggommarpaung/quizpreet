@@ -1,0 +1,101 @@
+/* client/src/components/SubNavForum.module.css */
+.tabNavContainer {
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: 6px;
+  display: flex;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  z-index: 100;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tabBtn {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 10px 4px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--text-color, #64748b);
+  font-size: 0.72rem;
+  font-weight: 700;
+  transition: all 0.25s ease;
+}
+
+.activeTab {
+  background-color: var(--primary-color, #2563eb);
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+/* Kunci Menu Atas Biar Gak Bisa Diklik Saat Masuk ke Dalam Bab (Hanya Jadi Progress) */
+.navDisabled {
+  opacity: 0.85;
+  background-color: #f1f5f9;
+  cursor: not-allowed;
+}
+
+.navDisabled .tabBtn {
+  cursor: not-allowed;
+}
+
+/* --- AMANDEMEN BADGE NOTIFIKASI --- */
+.relativeBtn {
+  position: relative;
+}
+
+.globalRedBadgeNotif {
+  position: absolute;
+  top: 2px;
+  right: 18px;
+  background-color: #ef4444; /* Merah menyala */
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+  border: 1.5px solid #ffffff;
+}
+
+:global(.dark) .globalRedBadgeNotif {
+  border-color: #1e293b;
+}
+
+/* Taruh ini di paling bawah file SubNavForum.module.css */
+.relativeBtn {
+  position: relative !important;
+}
+
+.globalRedBadgeNotif {
+  position: absolute !important;
+  top: 4px;
+  right: 22px;
+  background-color: #ef4444 !important; /* Warna Merah */
+  color: #ffffff !important;
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2px;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+  border: 1.5px solid #ffffff;
+  z-index: 10;
+}

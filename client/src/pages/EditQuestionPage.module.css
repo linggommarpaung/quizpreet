@@ -1,0 +1,186 @@
+/* client/src/pages/EditQuestionPage.module.css */
+.adminContainer {
+    padding: 2rem;
+    background-color: #f9fafb;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.adminHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.adminHeader h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #111827;
+    flex-grow: 1;
+}
+
+.headerActions {
+    display: flex;
+    gap: 1rem;
+}
+
+.navButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+    color: #374151;
+    background-color: #e5e7eb;
+}
+
+.navButton:hover {
+    background-color: #d1d5db;
+}
+
+.saveButton {
+    background-color: #10b981;
+    color: white;
+}
+.saveButton:hover {
+    background-color: #059669;
+}
+.saveButton:disabled {
+    background-color: #d1d5db;
+    cursor: not-allowed;
+}
+
+.adminMain {
+    background-color: #ffffff;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.questionEditor {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.breadcrumb {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.questionTextarea, .explanationInput {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    box-sizing: border-box;
+}
+.questionTextarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.questionTextarea:focus, .explanationInput:focus, .optionInputContainer input:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    z-index: 1;
+    position: relative;
+}
+
+.optionsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.optionInputContainer {
+    display: flex;
+    align-items: center;
+}
+
+.optionInputContainer input {
+    flex-grow: 1;
+    padding: 0.75rem 1rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.5rem 0 0 0.5rem;
+    font-size: 1rem;
+    border-right: none;
+}
+
+.optionInputContainer .correctAnswer {
+    border-color: #10b981;
+    background-color: #f0fdf4;
+}
+
+.correctBtn {
+    padding: 0.75rem;
+    border: 2px solid #d1d5db;
+    border-left: 1px solid #d1d5db;
+    background-color: #f9fafb;
+    cursor: pointer;
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-size: 1.2rem;
+    color: #9ca3af;
+    transition: all 0.2s ease-in-out;
+}
+
+.correctBtn:hover {
+    background-color: #e5e7eb;
+    color: #4b5563;
+}
+
+.activeCorrectBtn {
+    background-color: #10b981;
+    color: white;
+    border-color: #059669;
+}
+.activeCorrectBtn:hover {
+    background-color: #059669;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .adminContainer {
+        padding: 1rem;
+    }
+    .adminHeader {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    .headerActions {
+        flex-direction: column;
+        width: 100%;
+    }
+    .optionsGrid {
+        grid-template-columns: 1fr;
+    }
+    .adminMain {
+        padding: 1.5rem 1rem;
+    }
+}

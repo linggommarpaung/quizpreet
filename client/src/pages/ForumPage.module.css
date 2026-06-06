@@ -1,0 +1,1256 @@
+/* client/src/pages/ForumPage.module.css */
+
+/* Kunci wrapper utama halaman forum pas satu layar penuh tanpa bisa di-scroll luar */
+.forumWrapperPage {
+  background-color: #f8fafc;
+  position: absolute;
+  top: 60px;       /* Sesuaikan tinggi NAVBAR UTAMA atas kamu */
+  bottom: 60px;    /* Sesuaikan tinggi BOTTOM NAV bawah kamu */
+  left: 0;
+  right: 0;
+  padding: 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden; /* Mengunci total micro-scroll luar */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Mode pratinjau overlay bab full layar */
+.fullscreenOverlayMode {
+  background-color: #ffffff;
+  position: fixed;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0;
+  right: 0;
+  height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 999;
+}
+
+/* SINKRONISASI DARKMODE GLOBAL */
+:global([data-theme='dark']) .forumWrapperPage,
+:global(.dark) .forumWrapperPage {
+  background-color: #0f172a;
+}
+:global([data-theme='dark']) .fullscreenOverlayMode,
+:global(.dark) .fullscreenOverlayMode {
+  background-color: #0f172a;
+}
+
+/* NAVBAR ATAS LEVEL 1 */
+.customLevel1Navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+:global([data-theme='dark']) .customLevel1Navbar,
+:global(.dark) .customLevel1Navbar {
+  background-color: #1e293b;
+  border-bottom: 1px solid #334155;
+}
+
+.navbarSubjectTitle {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+:global([data-theme='dark']) .navbarSubjectTitle,
+:global(.dark) .navbarSubjectTitle {
+  color: #f8fafc;
+}
+
+/* AREA UTAMA PANEL KONTEN */
+.hubContentPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0; /* Pengunci flexbox paling krusial */
+}
+
+/* LAYOUT MATERI */
+.materiInnerLayout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* GRID SELEKSI UTAMA */
+.selectionStandardGrid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.sectionHeaderTitle {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 4px 4px 10px 4px;
+  flex-shrink: 0;
+}
+:global([data-theme='dark']) .sectionHeaderTitle,
+:global(.dark) .sectionHeaderTitle {
+  color: #cbd5e1;
+}
+
+/* 🔓 AREA KONTROLLER SCROLL INTERNAL (HANYA INI YANG BISA DI-SCROLL) */
+.subjectBoxRow, .chapterBoxStack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto; 
+  padding: 4px;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ELEMEN CARD LIST DAFTAR BAB DAN MAPEL */
+.subjectCardRow, .chapterCardRow {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.chapterCardRow {
+  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding-right: 40px; /* Ruang untuk panah kanan */
+}
+
+:global([data-theme='dark']) .subjectCardRow,
+:global([data-theme='dark']) .chapterCardRow,
+:global(.dark) .subjectCardRow,
+:global(.dark) .chapterCardRow {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+}
+
+.subjectCardRow:active, .chapterCardRow:active {
+  transform: scale(0.98);
+  background-color: #f1f5f9;
+}
+:global([data-theme='dark']) .subjectCardRow:active,
+:global([data-theme='dark']) .chapterCardRow:active,
+:global(.dark) .subjectCardRow:active,
+:global(.dark) .chapterCardRow:active {
+  background-color: #475569;
+}
+
+/* IKON MATA PELAJARAN (BUANG --SECONDARY-BG MODE CERAH) */
+.subjectIconBox {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  background-color: #f8fafc;
+  color: #2563eb;
+  border: 1px solid #e2e8f0;
+}
+
+:global([data-theme='dark']) .subjectIconBox,
+:global(.dark) .subjectIconBox {
+  background-color: #334155;
+  color: #38bdf8;
+  border: 1px solid transparent;
+}
+
+/* TOMBOL KEMBALI */
+.backToHubBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 6px 12px;
+  background-color: #ffffff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+:global([data-theme='dark']) .backToHubBtn,
+:global(.dark) .backToHubBtn {
+  background-color: #334155;
+  color: #f8fafc;
+  border: 1px solid #475569;
+}
+
+.subMetaData { flex: 1; }
+.subMetaData h4 { margin: 0 0 2px 0; font-size: 0.88rem; font-weight: 700; color: #1e293b; }
+:global([data-theme='dark']) .subMetaData h4, :global(.dark) .subMetaData h4 { color: #f8fafc; }
+.subMetaData p { margin: 0; font-size: 0.72rem; color: #64748b; }
+:global([data-theme='dark']) .subMetaData p, :global(.dark) .subMetaData p { color: #94a3b8; }
+
+.arrowChevronRight, .arrowCardIcon { color: #94a3b8; font-size: 0.8rem; flex-shrink: 0; }
+.arrowCardIcon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.chapterRowMetaTop span {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #2563eb;
+  background-color: #eff6ff;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+:global([data-theme='dark']) .chapterRowMetaTop span,
+:global(.dark) .chapterRowMetaTop span {
+  color: #38bdf8;
+  background-color: #0c4a6e;
+}
+
+.chapterCardRow h4 { margin: 2px 0 0 0; font-size: 0.88rem; font-weight: 700; color: #1e293b; line-height: 1.3; }
+:global([data-theme='dark']) .chapterCardRow h4, :global(.dark) .chapterCardRow h4 { color: #f8fafc; }
+
+/* LOADING & EMPTY STATES */
+.loadingStateBlock, .emptyStateBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+/* ==================== CORE PDF VIEWER FULLSCREEN SYSTEM ==================== */
+.chapterReaderFullscreenView { display: flex; flex-direction: column; height: 100%; width: 100%; overflow: hidden; }
+.chapterReaderHeader { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; background-color: #ffffff; flex-shrink: 0; }
+:global([data-theme='dark']) .chapterReaderHeader, :global(.dark) .chapterReaderHeader { background-color: #1e293b; border-bottom: 1px solid #334155; }
+
+.readerExitBtn { background: none; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #334155; }
+:global([data-theme='dark']) .readerExitBtn, :global(.dark) .readerExitBtn { border-color: #475569; color: #cbd5e1; }
+.readerHeaderTitles span { font-size: 0.65rem; color: #64748b; display: block; }
+.readerHeaderTitles h4 { margin: 0; font-size: 0.85rem; font-weight: 700; color: #1e293b; }
+:global([data-theme='dark']) .readerHeaderTitles h4, :global(.dark) .readerHeaderTitles h4 { color: #f8fafc; }
+
+.sliderProgressBarWrapper { padding: 10px 16px; background-color: #ffffff; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+:global([data-theme='dark']) .sliderProgressBarWrapper, :global(.dark) .sliderProgressBarWrapper { background-color: #1e293b; border-bottom: 1px solid #334155; }
+.sliderBarTrack { flex: 1; height: 6px; background-color: #e2e8f0; border-radius: 99px; overflow: hidden; }
+:global([data-theme='dark']) .sliderBarTrack, :global(.dark) .sliderBarTrack { background-color: #334155; }
+.sliderBarFillActive { height: 100%; background: linear-gradient(90deg, #2563eb, #3b82f6); width: 0%; transition: width 0.3s ease; }
+.progressValueLabelTxt { font-size: 0.7rem; font-weight: 700; color: #64748b; }
+
+.materiSubTabSwitcherRow { display: flex; background-color: #f1f5f9; padding: 4px; margin: 10px 12px 4px 12px; border-radius: 10px; flex-shrink: 0; }
+:global([data-theme='dark']) .materiSubTabSwitcherRow, :global(.dark) .materiSubTabSwitcherRow { background-color: #1e293b; }
+.subTabBtnItem { flex: 1; background: none; border: none; padding: 8px; font-size: 0.72rem; font-weight: 700; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 8px; }
+.activeSubTab { background-color: #ffffff; color: #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+:global([data-theme='dark']) .activeSubTab, :global(.dark) .activeSubTab { background-color: #334155; color: #38bdf8; }
+
+.readerScrollableCoreBody { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 12px; box-sizing: border-box; min-height: 0; }
+.pdfReaderCanvasFrame { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.pdfRealContainerStyle { flex: 1; display: flex; align-items: center; justify-content: center; background-color: #cbd5e1; border-radius: 12px; overflow: hidden; position: relative; }
+:global([data-theme='dark']) .pdfRealContainerStyle, :global(.dark) .pdfRealContainerStyle { background-color: #334155; }
+
+.pdfActionBottomControls { display: flex; align-items: center; justify-content: space-between; padding: 10px 4px 4px 4px; margin-top: auto; flex-shrink: 0; }
+.controlNavPdfBtn { background-color: #ffffff; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #334155; cursor: pointer; }
+:global([data-theme='dark']) .controlNavPdfBtn, :global(.dark) .controlNavPdfBtn { background-color: #1e293b; border-color: #334155; color: #cbd5e1; }
+.controlNavPdfBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.timerBadgeAlert { background-color: #fff7ed; border: 1px solid #ffedd5; color: #ea580c; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+:global([data-theme='dark']) .timerBadgeAlert, :global(.dark) .timerBadgeAlert { background-color: #431407; border-color: #7c2d12; color: #fdba74; }
+.nextStepActionOrangeBtn { background-color: #ea580c; border: none; color: #ffffff; padding: 8px 16px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+.nextStepActionOrangeBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* LATIHAN & CHAT AREA SCROLL */
+.latihanFlexSection { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.infoAlertBanner { background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; text-align: center; flex-shrink: 0; }
+:global([data-theme='dark']) .infoAlertBanner, :global(.dark) .infoAlertBanner { background-color: #064e3b; border-color: #047857; color: #a7f3d0; }
+
+.latihanQuestionCard { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; flex-shrink: 0; }
+:global([data-theme='dark']) .latihanQuestionCard, :global(.dark) .latihanQuestionCard { background-color: #1e293b; border-color: #334155; }
+.latihanQuestionCard h4 { margin: 0 0 12px 0; font-size: 0.85rem; font-weight: 700; color: #1e293b; line-height: 1.4; }
+:global([data-theme='dark']) .latihanQuestionCard h4, :global(.dark) .latihanQuestionCard h4 { color: #f8fafc; }
+
+.latihanOptionsVerticalStack { display: flex; flex-direction: column; gap: 8px; }
+.latihanOptBtn, .latihanOptBtnPicked, .correctOptBtn, .wrongOptBtn { width: 100%; text-align: left; padding: 10px 12px; font-size: 0.78rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+
+.latihanOptBtn { background-color: #ffffff; border: 1px solid #e2e8f0; color: #334155; }
+:global([data-theme='dark']) .latihanOptBtn, :global(.dark) .latihanOptBtn { background-color: #334155; border-color: #475569; color: #cbd5e1; }
+.latihanOptBtnPicked { background-color: #eff6ff; border: 1px solid #3b82f6; color: #1d4ed8; }
+:global([data-theme='dark']) .latihanOptBtnPicked, :global(.dark) .latihanOptBtnPicked { background-color: #1e3a8a; border-color: #3b82f6; color: #93c5fd; }
+
+.correctOptBtn { background-color: #d1fae5; border: 1px solid #10b981; color: #065f46; }
+:global([data-theme='dark']) .correctOptBtn, :global(.dark) .correctOptBtn { background-color: #064e3b; border-color: #10b981; color: #a7f3d0; }
+.wrongOptBtn { background-color: #fee2e2; border: 1px solid #ef4444; color: #991b1b; }
+:global([data-theme='dark']) .wrongOptBtn, :global(.dark) .wrongOptBtn { background-color: #4c1d1d; border-color: #ef4444; color: #fca5a5; }
+
+.latihanExplanationBox { margin-top: 10px; background-color: #fafafa; border-left: 3px solid #eab308; padding: 8px 10px; border-radius: 0 8px 8px 0; }
+:global([data-theme='dark']) .latihanExplanationBox, :global(.dark) .latihanExplanationBox { background-color: #334155; }
+.latihanExplanationBox h5 { margin: 0 0 2px 0; font-size: 0.72rem; color: #854d0e; font-weight: 700; }
+:global([data-theme='dark']) .latihanExplanationBox h5, :global(.dark) .latihanExplanationBox h5 { color: #fde047; }
+.latihanExplanationBox p { margin: 0; font-size: 0.7rem; color: #451a03; }
+:global([data-theme='dark']) .latihanExplanationBox p, :global(.dark) .latihanExplanationBox p { color: #cbd5e1; }
+
+.unlockedNextStageArea { text-align: center; padding: 14px 10px; background-color: #ffffff; border: 1px dashed #e2e8f0; border-radius: 12px; margin-top: 10px; flex-shrink: 0; }
+:global([data-theme='dark']) .unlockedNextStageArea, :global(.dark) .unlockedNextStageArea { background-color: #1e293b; border-color: #334155; }
+.unlockedNextStageArea p { margin: 0 0 8px 0; font-size: 0.72rem; color: #64748b; font-weight: 600; }
+.triggerNextStageExamBtn { background-color: #2563eb; border: none; padding: 8px 20px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #fff; cursor: pointer; }
+
+.miniExamCenteringBlock { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+.examIconTheme { color: #2563eb; }
+:global([data-theme='dark']) .examIconTheme, :global(.dark) .examIconTheme { color: #38bdf8; }
+.miniExamCenteringBlock h3 { margin: 12px 0 6px 0; font-size: 0.95rem; font-weight: 700; }
+.miniExamCenteringBlock p { margin: 0 0 16px 0; font-size: 0.72rem; color: #64748b; max-width: 240px; }
+.startMiniExamBtnAction { background-color: #2563eb; border: none; color: #fff; padding: 10px 24px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+
+/* CHAT PLATFORM SCROLL */
+.chatIntegratedLayout { flex: 1; display: flex; flex-direction: column; overflow: hidden; height: 100%; }
+.chatViewContainerBody { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; background: #efeae2; border-radius: 12px; position: relative; }
+:global([data-theme='dark']) .chatViewContainerBody, :global(.dark) .chatViewContainerBody { background: #0b141a; }
+.chatHeaderSectionBox { background: #075e54; padding: 10px 14px; flex-shrink: 0; }
+.chatHeaderTitleText { color: #fff; font-size: 0.8rem; font-weight: 700; }
+.chatListViewCoreScroll { flex: 1; overflow-y: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
+.messagesInsideFlowArea { display: flex; flex-direction: column; gap: 8px; }
+.chatMsgRow { display: flex; flex-direction: column; max-width: 75%; padding: 6px 10px; border-radius: 8px; font-size: 0.78rem; line-height: 1.4; }
+.msgRowOther { background: #fff; align-self: flex-start; border-top-left-radius: 0; }
+:global([data-theme='dark']) .msgRowOther, :global(.dark) .msgRowOther { background: #1f2c34; color: #fff; }
+.msgRowSelf { background: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; }
+:global([data-theme='dark']) .msgRowSelf, :global(.dark) .msgRowSelf { background: #005c4b; color: #fff; }
+.chatUserNameSender { font-size: 0.62rem; font-weight: 700; color: #2563eb; margin-bottom: 2px; }
+.msgBubbleCore p { margin: 0; }
+.whatsappFooterFixedContainer { background: #f0f2f5; padding: 6px 10px; flex-shrink: 0; }
+:global([data-theme='dark']) .whatsappFooterFixedContainer, :global(.dark) .whatsappFooterFixedContainer { background: #1f2c34; }
+.msgBottomInputForm { width: 100%; }
+.inputContainerStickyMobile { display: flex; gap: 8px; align-items: center; }
+.inputContainerStickyMobile input { flex: 1; border: none; padding: 8px 12px; border-radius: 20px; font-size: 0.78rem; outline: none; background: #fff; }
+:global([data-theme='dark']) .inputContainerStickyMobile input, :global(.dark) .inputContainerStickyMobile input { background: #2a3942; color: #fff; }
+.msgSubmitSendBtn { background: #00a884; border: none; color: #fff; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+/* SPINNER ANIMATION */
+.spinnerIconAnim { animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* OVERLAY MODAL SYSTEM */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6); /* Overlay gelap estetik */
+  backdrop-filter: blur(4px);               /* Efek blur modern */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 10005;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalContentBox {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;                      /* Sudut lebih halus */
+  padding: 24px;
+  width: 100%;
+  max-width: 340px;                         /* Memperbaiki ukuran lebar proporsional HP */
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: scaleUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-sizing: border-box;
+}
+
+/* Sinkronisasi Darkmode Modal Box */
+:global([data-theme='dark']) .modalContentBox,
+:global(.dark) .modalContentBox {
+  background-color: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.modalIconWarning {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  display: inline-block;
+  animation: pulseIcon 1.5s infinite;
+}
+
+.modalContentBox h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+:global([data-theme='dark']) .modalContentBox h3,
+:global(.dark) .modalContentBox h3 {
+  color: #f8fafc;
+}
+
+.modalContentBox p {
+  margin: 0 0 20px 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  line-height: 1.5;
+  font-weight: 500;
+}
+:global([data-theme='dark']) .modalContentBox p,
+:global(.dark) .modalContentBox p {
+  color: #94a3b8;
+}
+
+/* Penataan Layout Tombol Aksi */
+.modalActionsRow {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+.modalCancelBtn, .modalConfirmBtn {
+  flex: 1;                                  /* Tombol sama rata kiri-kanan */
+  border: none;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Tombol Batal / Lanjut Belajar (TIDAK Memakai --secondary-bg di Mode Cerah) */
+.modalCancelBtn {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+.modalCancelBtn:active {
+  background-color: #e2e8f0;
+  transform: scale(0.98);
+}
+/* Darkmode Tombol Batal */
+:global([data-theme='dark']) .modalCancelBtn,
+:global(.dark) .modalCancelBtn {
+  background-color: #334155;
+  color: #f8fafc;
+  border: 1px solid #475569;
+}
+:global([data-theme='dark']) .modalCancelBtn:active,
+:global(.dark) .modalCancelBtn:active {
+  background-color: #475569;
+}
+
+/* Tombol Ya, Keluar */
+.modalConfirmBtn {
+  background-color: #ef4444;                /* Warna Merah Tegas */
+  color: #ffffff;
+}
+.modalConfirmBtn:active {
+  background-color: #dc2626;
+  transform: scale(0.98);
+}
+/* Darkmode Tombol Keluar */
+:global([data-theme='dark']) .modalConfirmBtn,
+:global(.dark) .modalConfirmBtn {
+  background-color: #ea580c;                /* Orange Gelap/Merah bata agar nyaman di mata saat gelap */
+}
+:global([data-theme='dark']) .modalConfirmBtn:active,
+:global(.dark) .modalConfirmBtn:active {
+  background-color: #c2410c;
+}
+
+/* ANIMASI HALUS AGAR MODAL TERLIHAT PREMIUM */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* ==========================================================================
+   TIMELINE PROGRESS BAR SYSTEM (RPG STYLE)
+   ========================================================================== */
+
+.timelineContainer {
+  width: 90%;
+  margin: 25px auto 35px auto; /* Beri jarak bawah lebih untuk label teks icon */
+  position: relative;
+}
+
+.timelineTrack {
+  height: 8px;
+  background-color: var(--border-color, #e2e8f0); /* Abu-abu terang pas Light mode, abu gelap pas Dark mode */
+  border-radius: 10px;
+  position: relative;
+}
+
+/* Theme Dark mode overrides otomatis jika root html punya class dark / data-theme */
+:global(.dark) .timelineTrack {
+  background-color: #334155; 
+}
+
+.timelineFillActive {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #2563eb); /* Gradasi warna biru solid */
+  border-radius: 10px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
+}
+
+/* NODE TITIK CHECKPOINT */
+.checkpointNode {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: default; /* 🟢 Ganti pointer menjadi default agar kerasa kaku gak bisa diklik */
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.nodeIconBox {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
+  background-color: #f1f5f9;
+  border: 2px solid #cbd5e1;
+}
+
+.nodeLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 4px;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+/* VARIASI STATUS WARNA KONDISI ICON (Disesuaikan otomatis dengan tema) */
+
+/* 1. Status Abu-abu (Belum Terbuka / Terkunci kaku) */
+.nodeDisabled .nodeIconBox {
+  background-color: var(--card-bg, #ffffff);
+  color: #94a3b8; /* Teks icon redup abu-abu */
+  border-color: #cbd5e1;
+}
+.nodeDisabled .nodeLabel {
+  color: #94a3b8;
+}
+:global(.dark) .nodeDisabled .nodeIconBox {
+  background-color: #1e293b;
+  color: #475569;
+  border-color: #334155;
+}
+
+/* 2. Status Terbuka Aksesnya tapi belum kelar misinya */
+.nodeUnlockedButNotDone .nodeIconBox {
+  background-color: var(--card-bg, #ffffff);
+  color: #2563eb; /* Berwarna biru tandanya bisa diklik */
+  border-color: #2563eb;
+  animation: pulseLight 2s infinite; /* Kasih efek kedip halus biar menarik perhatian siswa */
+}
+.nodeUnlockedButNotDone .nodeLabel {
+  color: var(--text-color, #1e293b);
+}
+
+/* 3. Status Sempurna / Aktif Menyala Biru Penuh (Progres sudah menyentuh/melewati) */
+.nodeActive .nodeIconBox {
+  background-color: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+  transform: scale(1.1);
+}
+.nodeActive .nodeLabel {
+  color: #2563eb;
+  font-weight: 700;
+}
+:global(.dark) .nodeActive .nodeIconBox {
+  background-color: #3b82f6;
+  border-color: #60a5fa;
+}
+:global(.dark) .nodeActive .nodeLabel {
+  color: #60a5fa;
+}
+
+/* Animasi Pulse Kedip Lembut untuk Tab yang sedang aktif dibuka */
+@keyframes pulseLight {
+  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+
+.timelineStatusText {
+  text-align: center;
+  font-size: 0.75rem;
+  margin-top: 24px;
+  color: var(--text-muted, #64748b);
+}
+
+/* ==========================================================================
+   SISTEM SLIDE SOAL SATU PER SATU & ANIMASI KLIK OPSI
+   ========================================================================== */
+
+.latihanQuizContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.quizHeaderMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-muted, #64748b);
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+.miniProgressDots {
+  display: flex;
+  gap: 6px;
+}
+
+.dotItem {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--border-color, #cbd5e1);
+  transition: all 0.3s ease;
+}
+:global(.dark) .dotItem { background-color: #334155; }
+
+.dotActive {
+  background-color: #2563eb;
+  transform: scale(1.25);
+  box-shadow: 0 0 6px rgba(37, 99, 235, 0.5);
+}
+.dotFilled {
+  background-color: #10b981; /* Hijau jika soal tersebut sudah dijawab */
+}
+
+/* KARTU SOAL DENGAN ANIMASI TRANSISI SLIDE IN */
+.latihanQuestionCardAnim {
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  animation: slideInQuestion 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+:global(.dark) .latihanQuestionCardAnim {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+@keyframes slideInQuestion {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* EFEK ANIMASI POP SAKTI SAAT TOMBOL OPSI DIKLIK */
+.latihanOptBtn, .latihanOptBtnPicked, .correctOptBtn, .wrongOptBtn {
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border: 2px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #334155;
+  transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+:global(.dark) .latihanOptBtn {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+/* Efek Tekan Jentik (Active Click) */
+.latihanOptBtn:active, .latihanOptBtnPicked:active {
+  transform: scale(0.97); /* Sedikit mengecil pas ditekan jempol biar kerasa klik-nya */
+}
+
+.latihanOptBtn:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+:global(.dark) .latihanOptBtn:hover {
+  background-color: #334155;
+}
+
+/* Pilihan Sementara */
+.latihanOptBtnPicked {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  color: #1e40af;
+}
+
+/* Jawaban Benar (Menyala Hijau Premium) */
+.correctOptBtn {
+  border-color: #10b981;
+  background-color: #ecfdf5;
+  color: #065f46;
+  animation: popSuccess 0.3s ease-in-out;
+}
+:global(.dark) .correctOptBtn {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+/* Jawaban Salah (Menyala Merah Lembut) */
+.wrongOptBtn {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+  color: #991b1b;
+  animation: shakeWrong 0.35s ease-in-out;
+}
+:global(.dark) .wrongOptBtn {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+/* BARIS NAVIGASI TOMBOL */
+.quizNavigationRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.quizNavBtn, .quizNavBtnPrimary, .quizNavBtnFinished {
+  flex: 1;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quizNavBtn {
+  background-color: #e2e8f0;
+  color: #475569;
+}
+.quizNavBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+:global(.dark) .quizNavBtn { background-color: #334155; color: #94a3b8; }
+
+.quizNavBtnPrimary {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+.quizNavBtnPrimary:disabled {
+  background-color: #94a3b8;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.quizNavBtnFinished {
+  background-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+/* KEYFRAMES ANIMASI PENDUKUNG */
+@keyframes popSuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shakeWrong {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+/* ==========================================================================
+   MINI ULANGAN STYLE (POLOSAN, FORMAL, TERTUTUP & POP-UP REWARD)
+   ========================================================================== */
+
+.ujianWrapper {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.gerbangUjianBox {
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+}
+:global(.dark) .gerbangUjianBox { background-color: #1e293b; border-color: #334155; }
+
+.aturanUjianList {
+  text-align: left;
+  margin: 20px auto;
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.88rem;
+}
+
+.startUjianBtn {
+  background: linear-gradient(90deg, #2563eb, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* LEMBARAN AKTIF POLOSAN (RATA DI HALAMAN) */
+.lembaranUjianActive {
+  width: 100%;
+  position: relative;
+}
+
+.floatingTimerHeader {
+  position: sticky;
+  top: 10px;
+  z-index: 50;
+  background-color: #1e293b;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 30px;
+  width: fit-content;
+  margin: 0 auto 20px auto;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.timerKritis {
+  color: #f87171;
+  animation: blinkRed 1s infinite;
+}
+
+@keyframes blinkRed {
+  50% { opacity: 0.4; }
+}
+
+.judulDaftarSoal {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 25px;
+  border-bottom: 2px dashed var(--border-color, #cbd5e1);
+  padding-bottom: 10px;
+}
+
+.barisSoalPolos {
+  margin-bottom: 28px;
+  padding-bottom: 15px;
+}
+
+.teksSoalUjian {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-color, #1e293b);
+}
+
+.pilihanUjianRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btnOpsiUjianPolos {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--border-color, #cbd5e1);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  color: var(--text-color, #334155);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.bulatanCeklist {
+  font-size: 1.1rem;
+  color: #94a3b8;
+}
+
+.btnOpsiUjianTerpilih {
+  background-color: rgba(37, 99, 235, 0.08);
+  border-color: #2563eb;
+  font-weight: 700;
+}
+.btnOpsiUjianTerpilih .bulatanCeklist {
+  color: #2563eb;
+}
+
+.submitUjianActionBtn {
+  width: 100%;
+  background-color: #1e293b;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 20px;
+  margin-bottom: 25px;
+}
+:global(.dark) .submitUjianActionBtn { background-color: #3b82f6; }
+
+/* MODAL / BACKDROP POP-UP HASIL */
+.backdropModalUjian {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.cardHasilUjianKertas {
+  background-color: #ffffff;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 420px;
+  padding: 26px;
+  position: relative;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  color: #1e293b; /* Dipaksa cerah agar saat di-convert html2canvas hasilnya estetik kontras */
+}
+
+.badgeStatusLulus {
+  background-color: #10b981;
+  color: white;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 6px 14px;
+  border-radius: 20px;
+  width: fit-content;
+  margin: 0 auto 12px auto;
+  letter-spacing: 1px;
+}
+
+.badgeStatusRemedial {
+  background-color: #ef4444;
+  color: white;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 6px 14px;
+  border-radius: 20px;
+  width: fit-content;
+  margin: 0 auto 12px auto;
+  letter-spacing: 1px;
+}
+
+.titleHasilChapter {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.dividerGaris {
+  height: 2px;
+  background-color: #f1f5f9;
+  margin: 15px 0;
+}
+
+.scoreBesarMelingkar {
+  margin: 20px auto;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: 4px dashed #2563eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.labelScoreKecil { font-size: 0.65rem; color: #64748b; font-weight: 700; }
+.angkaScoreUtama { font-size: 2.2rem; font-weight: 900; color: #1e293b; line-height: 1; margin: 2px 0; }
+.labelKkmKeterangan { font-size: 0.65rem; color: #94a3b8; }
+
+.boxRewardUjianKecil {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+.boxRewardUjianKecil h5 { margin: 0 0 6px 0; font-size: 0.8rem; color: #475569; }
+
+.rowRewardAset {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #10b981;
+}
+
+.notifReviewSaja { font-size: 0.6rem; color: #94a3b8; margin: 6px 0 0 0; }
+
+.grupAksiTombolModal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btnAksiShare {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 11px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.rowAksiNavigasi {
+  display: flex;
+  gap: 10px;
+}
+
+.btnAksiKembaliList, .btnAksiLanjutBab {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btnAksiKembaliList { background-color: #f1f5f9; color: #475569; }
+.btnAksiLanjutBab { background-color: #1e293b; color: white; border: none; }
+
+/* AREA SCROLL KHUSUS DERETAN SOAL (POLOSAN TANPA BACKDROP KAKU) */
+.scrollableSoalArea {
+  max-height: 48vh; /* Membatasi tinggi area soal agar tidak meluber keluar layar */
+  overflow-y: auto;  /* Mengaktifkan scroll vertikal jika soalnya banyak */
+  padding-right: 8px; /* Jarak kecil di kanan biar gak mepet sama scrollbar bawaan HP */
+  background: transparent; /* Dipastikan polos transparan menyatu dengan halaman */
+  border: none;
+}
+
+/* Modifikasi tampilan scrollbar biar estetik dan tipis (Khusus browser berbasis Chrome/Webkit) */
+.scrollableSoalArea::-webkit-scrollbar {
+  width: 5px;
+}
+.scrollableSoalArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollableSoalArea::-webkit-scrollbar-thumb {
+  background-color: var(--border-color, #cbd5e1);
+  border-radius: 10px;
+}
+:global(.dark) .scrollableSoalArea::-webkit-scrollbar-thumb {
+  background-color: #334155;
+}
+
+/* ==================== STYLING SISTEM KUNCIAN GATEKEEPER BAB ==================== */
+
+/* Menjadikan card bab pudar, abu-abu, dan pointer dilarang klik */
+.chapterRowLocked {
+  opacity: 0.55;
+  cursor: not-allowed !important;
+  background-color: #f1f5f9 !important;
+  filter: grayscale(1);
+  pointer-events: auto !important; /* Supaya toast error pas diklik tetap bisa memicu */
+}
+
+:global(.dark) .chapterRowLocked {
+  background-color: #1e293b !important;
+}
+
+/* Jarak pengetikan item baris status */
+.chapterRowMetaTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badgeLockedStatus {
+  background-color: #fef2f2 !important;
+  color: #ef4444 !important;
+  font-size: 0.6rem !important;
+}
+:global(.dark) .badgeLockedStatus { background-color: #451d1d !important; color: #fca5a5 !important; }
+
+.badgeCompletedStatus {
+  background-color: #ecfdf5 !important;
+  color: #10b981 !important;
+  font-size: 0.6rem !important;
+}
+:global(.dark) .badgeCompletedStatus { background-color: #064e3b !important; color: #a7f3d0 !important; }
+
+.badgeOpenStatus {
+  background-color: #eff6ff !important;
+  color: #3b82f6 !important;
+  font-size: 0.6rem !important;
+}
+:global(.dark) .badgeOpenStatus { background-color: #1e3a8a !important; color: #93c5fd !important; }
+
+.modalIconWarning {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  display: inline-block;
+  animation: pulseIcon 1.5s infinite;
+  color: #ea580c; /* Berikan warna dasar jingga formal pada faicon peringatan */
+}
+
+/* Modifikasi gap penataan icon faicon di dalam baris meta status kuncian bab */
+.chapterRowMetaTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chapterRowMetaTop span {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #2563eb;
+  background-color: #eff6ff;
+  padding: 4px 10px; /* Lebarkan sedikit padding penampung icon */
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px; /* Ruang bernafas antara faicon dengan teks status */
+}
+
+.badgeLockedStatus {
+  background-color: #fef2f2 !important;
+  color: #ef4444 !important;
+  font-size: 0.6rem !important;
+}
+:global(.dark) .badgeLockedStatus { background-color: #451d1d !important; color: #fca5a5 !important; }
+
+.badgeCompletedStatus {
+  background-color: #ecfdf5 !important;
+  color: #10b981 !important;
+  font-size: 0.6rem !important;
+}
+:global(.dark) .badgeCompletedStatus { background-color: #064e3b !important; color: #a7f3d0 !important; }
+
+.badgeOpenStatus {
+  background-color: #eff6ff !important;
+  color: #3b82f6 !important;
+  font-size: 0.6rem !important;
+}
+:global(.dark) .badgeOpenStatus { background-color: #1e3a8a !important; color: #93c5fd !important; }
+
+/* Tambahan styling flex icon faicon di teks alert & modal juara */
+.infoAlertBanner {
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+:global([data-theme='dark']) .infoAlertBanner, :global(.dark) .infoAlertBanner { background-color: #064e3b; border-color: #047857; color: #a7f3d0; }
+
+.latihanExplanationBox h5 {
+  margin: 0 0 4px 0;
+  font-size: 0.72rem;
+  color: #854d0e;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badgeStatusLulus, .badgeStatusRemedial {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rowRewardAset span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btnAksiShare {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}

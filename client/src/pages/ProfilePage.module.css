@@ -1,0 +1,402 @@
+/* client/src/pages/ProfilePage.module.css */
+
+.profileContainer {
+  background-color: var(--background-color, #f8fafc);
+  padding: 20px 16px 95px 16px;
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease;
+}
+
+/* --- SEAMLESS HEADER --- */
+.profileHeader {
+  text-align: center;
+  margin-bottom: 24px;
+  margin-top: 4px;
+}
+
+.headerTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-color, #0f172a);
+  margin: 0 0 3px 0;
+}
+
+.headerSub {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* --- AVATAR LAYOUT --- */
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.avatarWrapper {
+  position: relative;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.profileAvatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--card-bg, #ffffff);
+}
+
+.avatarFallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: var(--primary-color, #2563eb);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 2rem;
+  border: 3px solid var(--card-bg, #ffffff);
+}
+
+.editOverlay {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: var(--primary-color, #2563eb);
+  color: #ffffff;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.uploadStatusText {
+  font-size: 0.72rem;
+  color: var(--primary-color, #2563eb);
+  margin: 6px 0 0 0;
+  font-weight: 600;
+}
+
+/* --- INPUT GROUP STYLING --- */
+.profileForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 500px;
+  margin: 0 auto 32px auto;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inputGroup label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-color, #334155);
+}
+
+.inputGroup input {
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-color, #0f172a);
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.inputGroup input:focus {
+  border-color: var(--primary-color, #2563eb);
+}
+
+.disabledInput {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.saveButton {
+  background-color: var(--primary-color, #2563eb);
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  margin-top: 6px;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.15);
+}
+
+/* --- AREA KEAMANAN --- */
+.securitySection {
+  max-width: 500px;
+  margin: 0 auto;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  padding-top: 20px;
+}
+
+.securitySection h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-color, #0f172a);
+  margin: 0 0 12px 0;
+}
+
+.securityActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.securityActions button {
+  border: none;
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.resetBtn {
+  background-color: rgba(37, 99, 235, 0.08);
+  color: var(--primary-color, #2563eb);
+}
+
+.deleteBtn {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+}
+
+/* --- ✂️ OVERLAY MODAL --- */
+.editorOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  padding: 16px;
+}
+
+.editorBox {
+  background-color: var(--card-bg, #ffffff);
+  border-radius: 20px;
+  padding: 18px;
+  width: 100%;
+  max-width: 320px;
+  box-sizing: border-box;
+}
+
+.editorBox h3 {
+  margin: 0 0 4px 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-color, #0f172a);
+  text-align: center;
+}
+
+.guideText {
+  font-size: 0.68rem;
+  color: #64748b;
+  text-align: center;
+  margin: 0 0 14px 0;
+}
+
+/* 📦 Viewport Kotak Persegi: Kunci gerakan interaksi zoom bawaan browser */
+.cropViewportSquare {
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 18px auto;
+  border-radius: 12px;
+  border: 3px solid var(--primary-color, #2563eb);
+  position: relative;
+  overflow: hidden;
+  background-color: #0d1117;
+  touch-action: none; 
+}
+
+/* Mengubah behavior gambar pratinjau agar dinamis mengikuti kalkulasi inisialisasi */
+.previewSourceImg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none !important;
+  max-height: none !important;
+  transform-origin: center center;
+}
+
+/* 🟥 GRID UI/UX INTERAKTIF (Rule of Thirds) */
+.gridLayer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none; 
+}
+
+.gridLineH1, .gridLineH2, .gridLineV1, .gridLineV2 {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 1px rgba(0,0,0,0.4);
+}
+
+.gridLineH1 { top: 33.33%; left: 0; right: 0; height: 1px; }
+.gridLineH2 { top: 66.66%; left: 0; right: 0; height: 1px; }
+.gridLineV1 { left: 33.33%; top: 0; bottom: 0; width: 1px; }
+.gridLineV2 { left: 66.66%; top: 0; bottom: 0; width: 1px; }
+
+.actionToolRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.actionToolRow button {
+  flex: 1;
+  background-color: var(--background-color, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-color, #334155);
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.editorFooter {
+  display: flex;
+  gap: 10px;
+}
+
+.editorFooter button {
+  flex: 1;
+  border: none;
+  padding: 11px;
+  border-radius: 12px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cancelCropBtn {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+.applyCropBtn {
+  background-color: var(--primary-color, #2563eb);
+  color: #ffffff;
+}
+
+/* --- BANNER OVERLAY MODAL --- */
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+  padding: 20px;
+}
+
+.modalContent {
+  background-color: var(--card-bg, #ffffff);
+  padding: 20px;
+  border-radius: 18px;
+  max-width: 340px;
+  width: 100%;
+  text-align: center;
+}
+
+.modalContent h2 {
+  font-size: 1.1rem;
+  color: #ef4444;
+  margin: 0 0 10px 0;
+  font-weight: 800;
+}
+
+.modalContent p {
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 0 0 16px 0;
+}
+
+.confirmationInput {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ef4444;
+  background-color: rgba(239, 68, 68, 0.02);
+  color: var(--text-color, #0f172a);
+  box-sizing: border-box;
+  font-size: 0.82rem;
+  outline: none;
+  margin-bottom: 16px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+}
+
+.modalButtonCancel, .modalButtonConfirm {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.modalButtonCancel {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+.modalButtonConfirm {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+@media (min-width: 768px) {
+  .profileContainer {
+    padding: 24px 22% 100px 22%;
+  }
+}

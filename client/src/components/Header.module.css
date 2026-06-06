@@ -1,0 +1,50 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  height: 60px;
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.backButton {
+  background: transparent;
+  border: none;
+  color: var(--text-color-light);
+  font-size: 1.5rem; /* Larger icon */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.headerTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.headerMenu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.iconButton {
+  background: transparent;
+  border: none;
+  color: var(--text-color-light);
+  font-size: 1.25rem;
+  cursor: pointer;
+}

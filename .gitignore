@@ -1,0 +1,19 @@
+# Dependencies
+/node_modules
+
+# Local environment configuration
+.npmrc
+
+# Environment files
+.env
+.env.local
+.env.*.local
+client/.env
+client/.env.local
+client/.env.*.local
+server/.env
+server/.env.local
+
+# Logs and system files
+.DS_Store
+*.log

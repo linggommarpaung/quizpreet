@@ -1,0 +1,388 @@
+/* client/src/pages/LeaderboardPage.module.css */
+
+.leaderboardContainer {
+    background-color: var(--background-color, #f8fafc);
+    padding: 16px 16px 95px 16px;
+    min-height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+    transition: background-color 0.3s ease;
+}
+
+/* --- HEADER AREA --- */
+.headerArea {
+    text-align: center;
+    margin-bottom: 24px;
+    margin-top: 8px;
+    animation: fadeInDown 0.5s ease-out both;
+}
+
+.title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-color, #0f172a);
+    margin: 0 0 4px 0;
+}
+
+.description {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* --- 🏆 STRUKTUR PODIUM JUARA INDEPENDEN --- */
+.podiumContainer {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding: 0 4px;
+    height: 185px;
+}
+
+.podiumColumn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+    animation: podiumBounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    animation-delay: var(--anim-delay, 0s);
+}
+
+.podiumAvatarWrapper {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.podiumAvatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
+    border: 3px solid var(--card-bg, #ffffff);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease;
+}
+
+.podiumAvatar:hover {
+    transform: scale(1.1);
+}
+
+.podiumAvatarFallback {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background-color: var(--primary-color, #2563eb);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    border: 3px solid var(--card-bg, #ffffff);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.crownIcon {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-4deg);
+    color: #eab308;
+    font-size: 1.2rem;
+    filter: drop-shadow(0 2px 4px rgba(234, 179, 8, 0.25));
+    z-index: 5;
+}
+
+.podiumRankBadge {
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: var(--card-bg, #ffffff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    z-index: 2;
+}
+
+.goldPodium .podiumRankBadge { color: #eab308; }
+.silverPodium .podiumRankBadge { color: #94a3b8; }
+.bronzePodium .podiumRankBadge { color: #d97706; }
+
+.podiumInfo {
+    text-align: center;
+    margin-bottom: 6px;
+    z-index: 2;
+}
+
+.podiumName {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-color, #1e293b);
+    max-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.podiumScore {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--primary-color, #2563eb);
+}
+
+.starIconMini {
+    font-size: 0.65rem;
+    color: #eab308;
+}
+
+/* Kotak Alas Dudukan Podium */
+.podiumBase {
+    width: 100%;
+    border-radius: 12px 12px 6px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    box-shadow: inset 0 2px 4px rgba(255,255,255,0.15);
+}
+
+.podiumNumber {
+    font-size: 1.4rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Skala Ukuran Masing-Masing Podium */
+.goldPodium { height: 100%; }
+.goldPodium .podiumBase {
+    height: 85px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+.goldPodium .podiumAvatar {
+    width: 58px;
+    height: 58px;
+    border-color: #fbbf24;
+}
+
+.silverPodium { height: 85%; }
+.silverPodium .podiumBase {
+    height: 65px;
+    background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+}
+
+.bronzePodium { height: 75%; }
+.bronzePodium .podiumBase {
+    height: 52px;
+    background: linear-gradient(135deg, #f59e0b, #b45309);
+}
+
+.podiumMe .podiumName {
+    color: var(--primary-color, #2563eb);
+    font-weight: 800;
+}
+
+/* --- 📋 BARIS LIST PERINGKAT BERLANJUT --- */
+.rankList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.rankItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--card-bg, #ffffff);
+    border: 1px solid var(--border-color, #f1f5f9);
+    padding: 11px 14px;
+    border-radius: 14px;
+    box-sizing: border-box;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    animation: slideUpRow 0.4s ease-out both;
+    animation-delay: calc(var(--row-index, 0) * 0.05s + 0.3s);
+}
+
+.rankItem:hover {
+    transform: translateY(-1px);
+}
+
+.rankLeftSection {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rankNumber {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #94a3b8;
+    min-width: 16px;
+    text-align: center;
+}
+
+.avatarClickableWrapper {
+    display: flex;
+    align-items: center;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid var(--border-color, #e2e8f0);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.avatar:hover {
+    transform: scale(1.1);
+}
+
+.avatarFallback {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #94a3b8;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.name {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text-color, #1e293b);
+}
+
+.score {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--primary-color, #2563eb);
+}
+
+.poinLabel {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #94a3b8;
+}
+
+/* Highlight Khusus Akun Milik Sendiri */
+.currentUser {
+    border-color: var(--primary-color, #2563eb);
+    background-color: rgba(37, 99, 235, 0.05);
+}
+.currentUser .name {
+    color: var(--primary-color, #2563eb);
+    font-weight: 700;
+}
+
+/* --- 🔍 JENDELA PREVIEW ZOOM POP-UP MODAL --- */
+.modalOverlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.modalContent {
+    background-color: var(--card-bg, #ffffff);
+    padding: 20px;
+    border-radius: 20px;
+    position: relative;
+    max-width: 300px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    animation: modalScalePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modalCloseBtn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.modalImageImg {
+    width: 210px;
+    height: 210px;
+    border-radius: 14px;
+    object-fit: cover;
+    margin: 12px auto;
+    border: 2px solid var(--border-color, #e2e8f0);
+    display: block;
+}
+
+.modalImageTitle {
+    margin: 4px 0 0 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-color, #0f172a);
+}
+
+/* --- KEYFRAMES TIMING ANIMASI --- */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes podiumBounceIn {
+    0% { opacity: 0; transform: translateY(30px) scale(0.9); }
+    70% { transform: translateY(-4px) scale(1.02); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes slideUpRow {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes modalScalePop {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.errorText {
+    padding: 50px 20px;
+    color: #64748b;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+@media (min-width: 768px) {
+    .leaderboardContainer {
+        padding: 24px 15% 100px 15%;
+    }
+}

@@ -1,0 +1,74 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+  	// Fungsi bantuan untuk memeriksa apakah pengguna yang diautentikasi adalah admin.
+      function isAdmin() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      }
+
+      // Fungsi bantuan untuk memeriksa apakah pengguna yang diautentikasi adalah pemilik dokumen.
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+    // Aturan untuk koleksi pengguna
+    match /users/{userId} {
+      // Izinkan semua pengguna terautentikasi untuk melakukan query (list).
+      allow list: if request.auth != null;
+
+      // Pengguna tetap hanya dapat MEMBACA (get) datanya SENDIRI.
+      allow get: if request.auth != null && isOwner(userId);
+      
+      // Pengguna baru dapat membuat profil mereka sendiri saat pendaftaran.
+      allow create: if request.auth != null;
+      
+      // Admin dapat membaca atau menghapus pengguna mana pun.
+      allow read, delete: if isAdmin();
+
+      // Admin dapat memperbarui pengguna mana pun. Pengguna hanya dapat memperbarui data mereka sendiri dan tidak dapat mengubah peran mereka.
+      allow update: if isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role);
+    }
+
+    // Aturan untuk koleksi kuis
+    match /quizzes/{quizId} {
+        allow read: if request.auth != null;
+        allow write: if isAdmin();
+    }
+
+    // Aturan untuk koleksi jalur harian (dailyPaths)
+    match /dailyPaths/{date} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    // Aturan untuk progres kuis pengguna
+    match /quizProgress/{userId} {
+        allow read, write: if isOwner(userId);
+    }
+    
+    // Aturan untuk koleksi progres pengguna
+		match /userProgress/{userId} {
+		    allow read, write: if isOwner(userId);
+		}
+    
+    // Aturan untuk `adminSetting`
+    match /adminSetting/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ================================================
+    // ATURAN BARU UNTUK TUGAS ADMIN BERBASIS KLIEN
+    // ================================================
+    match /admin_tasks/{taskId} {
+      // HANYA admin yang bisa MEMBUAT tugas baru.
+      allow create: if isAdmin();
+      // Tidak ada yang boleh membaca, memperbarui, atau menghapus tugas setelah dibuat.
+      // Cloud Function akan menanganinya.
+      allow read, update, delete: if false;
+    }
+
+  }
+}

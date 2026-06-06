@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "site": "quizpreet-68102274-594ae",
+    "public": "client/dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

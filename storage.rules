@@ -1,0 +1,24 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Aturan untuk avatar pengguna
+    // Path: /avatars/{userId}/{fileName}
+    match /avatars/{userId}/{fileName} {
+      
+      // Siapa pun dapat membaca avatar (untuk ditampilkan di profil, papan peringkat, dll.)
+      allow read: if true;
+      
+      // Hanya pengguna yang terautentikasi dan cocok dengan userId yang dapat membuat/memperbarui file.
+      allow create, update: if request.auth != null && request.auth.uid == userId
+                        // Validasi tipe file (hanya gambar)
+                        && request.resource.contentType.matches('image/.*')
+                        // Validasi ukuran file (misalnya, maksimal 5MB)
+                        && request.resource.size < 5 * 1024 * 1024;
+
+      // Hanya pengguna yang terautentikasi dan cocok dengan userId yang dapat menghapus file.
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

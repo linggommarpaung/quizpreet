@@ -1,0 +1,600 @@
+/* client/src/components/ui/ChatDashboardSection.module.css */
+
+.chatResponsiveWrapper {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100dvh;
+  background-color: #f8fafc; /* Mode Cerah: Abu-abu samar netral */
+  z-index: 1001;
+  overflow: hidden;
+  font-family: 'Poppins', sans-serif;
+}
+
+:global(.dark) .chatResponsiveWrapper {
+  background-color: #0f172a; /* Mode Gelap: Slate pekat */
+}
+
+/* --- HEADER STYLING --- */
+.chatCustomHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+:global(.dark) .chatCustomHeader {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.chatBackBtn {
+  background: none;
+  border: 1px solid #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.chatBackBtn:hover {
+  background-color: #f1f5f9;
+}
+
+:global(.dark) .chatBackBtn {
+  color: #cbd5e1;
+  border-color: #475569;
+}
+
+:global(.dark) .chatBackBtn:hover {
+  background-color: #334155;
+}
+
+.chatHeaderTitleBlock h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+:global(.dark) .chatHeaderTitleBlock h3 {
+  color: #f8fafc;
+}
+
+.chatHeaderTitleBlock p {
+  margin: 2px 0 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+/* --- SUB NAVIGATION INTERNAL (TABS) --- */
+.chatSubNavTabs {
+  display: flex;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 8px;
+  gap: 4px;
+}
+
+:global(.dark) .chatSubNavTabs {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.subTabButton {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-bottom: 3px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.subTabActive {
+  color: #2563eb !important;
+  border-bottom-color: #2563eb;
+}
+
+:global(.dark) .subTabActive {
+  color: #3b82f6 !important;
+  border-bottom-color: #3b82f6;
+}
+
+/* --- MAIN BODY SCROLL AREA --- */
+.chatMainContentBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.globalChatLayoutContainer,
+.personalChatLayoutContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* --- MESSAGES STREAM AREA --- */
+.chatMessagesStreamArea {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.messageRowItem {
+  display: flex;
+  flex-direction: column;
+  max-width: 75%;
+}
+
+.msgRowSelf {
+  align-self: flex-end;
+}
+
+.msgRowOther {
+  align-self: flex-start;
+}
+
+.msgSenderName {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 4px;
+  padding-left: 4px;
+}
+
+.msgBubbleCore {
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.msgRowSelf .msgBubbleCore {
+  background-color: #2563eb; /* Biru representatif aksen tombol */
+  color: #ffffff;
+  border-top-right-radius: 2px;
+}
+
+.msgRowOther .msgBubbleCore {
+  background-color: #ffffff;
+  color: #1e293b;
+  border-top-left-radius: 2px;
+  border: 1px solid #e2e8f0;
+}
+
+:global(.dark) .msgRowOther .msgBubbleCore {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+/* --- WHATSAPP STYLE FOOTER BAR --- */
+.whatsappFooterFixedContainer {
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+:global(.dark) .whatsappFooterFixedContainer {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.inputContainerStickyMobile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inputContainerStickyMobile input {
+  flex: 1;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 10px 16px;
+  border-radius: 24px;
+  outline: none;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+:global(.dark) .inputContainerStickyMobile input {
+  background-color: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+.msgSubmitSendBtn {
+  background-color: #2563eb;
+  border: none;
+  color: #ffffff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.msgSubmitSendBtn:active {
+  transform: scale(0.92);
+}
+
+/* --- USER DIRECTORY (PERSONAL CHAT) --- */
+.searchUserBarContainer {
+  padding: 12px 16px;
+  position: relative;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+:global(.dark) .searchUserBarContainer {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.searchIconBar {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.searchUserBarContainer input {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 10px 16px 10px 38px;
+  border-radius: 10px;
+  outline: none;
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+:global(.dark) .searchUserBarContainer input {
+  background-color: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+.directoryUsersScrollArea {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.userItemRowCard {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+:global(.dark) .userItemRowCard {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.userItemRowCard:hover {
+  background-color: #f1f5f9;
+  transform: translateX(2px);
+}
+
+:global(.dark) .userItemRowCard:hover {
+  background-color: #334155;
+}
+
+.userAvatarProfileBadge {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #f1f5f9;
+}
+
+:global(.dark) .userAvatarProfileBadge {
+  background-color: #0f172a;
+}
+
+.userAvatarProfileBadge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.userMainMetaDetails {
+  flex: 1;
+}
+
+.userMainMetaDetails h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+:global(.dark) .userMainMetaDetails h4 {
+  color: #f8fafc;
+}
+
+.userMainMetaDetails p {
+  margin: 2px 0 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.chevronRightAction {
+  color: #94a3b8;
+}
+
+/* --- EMPTY / LOADING STATE BLOCKS --- */
+.emptyChatPlaceholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: auto;
+  padding: 2rem;
+  color: #64748b;
+}
+
+.placeholderIcon {
+  font-size: 2.5rem;
+  color: #cbd5e1;
+  margin-bottom: 12px;
+}
+
+.emptyStateBlock {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.loadingStateBlock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #64748b;
+  padding: 2rem;
+  font-size: 0.88rem;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+.spinAnimation {
+  animation: spin 1s linear infinite;
+}
+
+/* --- FITUR PERSONAL CHAT, BULATAN HIJAU & PREVIEW MODAL FOTO --- */
+
+.avatarWrapperContainer {
+  position: relative;
+  display: inline-block;
+}
+
+/* Bulatan indikator status online di kontak list */
+.onlineDotIndicator {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  z-index: 2;
+}
+
+:global(.dark) .onlineDotIndicator {
+  border-color: #1e293b;
+}
+
+.dotActive {
+  background-color: #10b981; /* Hijau menyala */
+  box-shadow: 0 0 8px #10b981;
+}
+
+.dotInactive {
+  background-color: #94a3b8; /* Abu-abu redup */
+}
+
+/* Layout Room Personal Chat Mandiri */
+.personalChatRoomContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Container status dan meta info di bawah teks bubble */
+.msgMetaStatusContainer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 2px;
+  height: 14px;
+}
+
+/* Ikon centang WA style */
+.tickIcon {
+  font-size: 0.78rem;
+  margin-left: 4px;
+}
+
+.tickSent {
+  color: #e2e8f0; /* Centang 1 abu-abu terang */
+}
+
+.tickDelivered {
+  color: #cbd5e1; /* Centang 2 abu-abu lebih kontras */
+}
+
+.tickRead {
+  color: #a78bfa; /* Centang 2 warna ungu khas Quizpreet */
+}
+
+/* ================= OVERLAY MODAL FOTO PROFIL LARGE PREVIEW ================= */
+.photoOverlayContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: modalFadeIn 0.2s ease-out forwards;
+}
+
+.photoModalCard {
+  background-color: #ffffff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 380px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  animation: modalScaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+:global(.dark) .photoModalCard {
+  background-color: #1e293b;
+}
+
+.photoModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+:global(.dark) .photoModalHeader {
+  border-color: #334155;
+}
+
+.photoModalHeader h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+:global(.dark) .photoModalHeader h4 {
+  color: #f8fafc;
+}
+
+.closePhotoBtn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.closePhotoBtn:hover {
+  color: #ef4444;
+}
+
+.photoContentArea {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photoContentArea img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Keyframes Animasi Modal */
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalScaleUp {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Bulatan merah jumlah pesan belum dibaca di list kontak pribadi sebelah kanan */
+.contactListUnreadBadge {
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+  animation: popInBadge 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes popInBadge {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

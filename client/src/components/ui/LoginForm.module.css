@@ -1,0 +1,111 @@
+/* client/src/components/ui/LoginForm.module.css */
+
+.formContainer {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
+    transition: all 0.3s ease-in-out;
+}
+
+.formContainer h2 {
+    text-align: center;
+    color: #007bff; /* Warna biru konsisten */
+    margin-bottom: 25px;
+    font-size: 1.8em;
+}
+
+.inputGroup {
+    margin-bottom: 15px;
+}
+
+.inputGroup label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+    font-weight: 600;
+}
+
+.inputGroup input {
+    width: calc(100% - 20px);
+    padding: 12px 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+
+.inputGroup input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.submitButton {
+    width: 100%;
+    padding: 12px;
+    background-color: #007bff; /* Warna biru konsisten */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 20px;
+}
+
+.submitButton:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.submitButton:disabled {
+    background-color: #a0c4ff;
+    cursor: not-allowed;
+}
+
+.googleButton {
+    width: 100%;
+    padding: 12px;
+    background-color: #4285F4; /* Warna Google Blue */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 15px; /* Jarak dari tombol login */
+}
+
+.googleButton:hover:not(:disabled) {
+    background-color: #357ae8;
+}
+
+.switchText {
+    text-align: center;
+    margin-top: 15px;
+    color: #555;
+    font-size: 0.9em;
+}
+
+.switchText span {
+    color: #007bff;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.switchText span:hover {
+    color: #0056b3;
+}
+
+/* Responsif */
+@media (max-width: 600px) {
+    .formContainer {
+        border-radius: 0;
+        box-shadow: none;
+        padding: 20px;
+    }
+}

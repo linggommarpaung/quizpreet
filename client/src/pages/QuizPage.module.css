@@ -1,0 +1,340 @@
+/* client/src/pages/QuizPage.module.css */
+
+/* 🔒 WRAPPER UTAMA: Mengunci screen agar tidak scroll terlempar keluar */
+.quizWrapperPage {
+  background-color: #f8fafc;
+  position: absolute;
+  top: 60px;       /* Menyesuaikan jarak Navbar Atas */
+  bottom: 60px;    /* Menyesuaikan jarak Bottom Nav */
+  left: 0;
+  right: 0;
+  padding: 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Sinkronisasi Mode Gelap Global */
+:global([data-theme='dark']) .quizWrapperPage,
+:global(.dark) .quizWrapperPage {
+  background-color: #0f172a;
+}
+
+/* 👑 FIXED TOP BLOCK: Posisi stats diam mutlak di atas */
+.premiumHeaderSummary {
+  flex-shrink: 0;
+}
+
+.xpBalanceBlock {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+}
+:global(.dark) .xpBalanceBlock {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.xpDisplayRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.statBoxItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.starIconScore {
+  color: #eab308;
+  font-size: 1.5rem;
+}
+
+.fireIconStreak {
+  color: #f97316;
+  font-size: 1.5rem;
+}
+
+.statBoxMeta {
+  display: flex;
+  flex-direction: column;
+}
+
+.xpLabelTitle {
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+:global(.dark) .xpLabelTitle {
+  color: #94a3b8;
+}
+
+.statBoxMeta h5 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+:global(.dark) .statBoxMeta h5 {
+  color: #f8fafc;
+}
+
+.dividerLine {
+  width: 1px;
+  height: 30px;
+  background-color: #e2e8f0;
+}
+:global(.dark) .dividerLine {
+  background-color: #334155;
+}
+
+/* 🧩 SCROLL ZONE CONTAINER: Area list mapel & kuis yang bisa di-scroll */
+.quizMainContentScrollable {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+/* Custom Scrollbar manis agar estetik */
+.quizMainContentScrollable::-webkit-scrollbar {
+  width: 5px;
+}
+.quizMainContentScrollable::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 10px;
+}
+:global(.dark) .quizMainContentScrollable::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
+
+/* 📋 LEVEL 0 & SECTION STYLING */
+.sectionTitleArea {
+  margin-bottom: 14px;
+}
+
+.sectionTitleArea h4 {
+  margin: 0 0 2px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+:global(.dark) .sectionTitleArea h4 {
+  color: #f1f5f9;
+}
+
+.sectionTitleArea p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+/* GRID CONTAINER MAPEL (Bebas background primary cerah solid) */
+.mapelGridContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mapelCardItem {
+  background-color: #ffffff; /* Menggunakan dasar putih cerah bersih */
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+:global(.dark) .mapelCardItem {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.mapelCardItem:hover {
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.iconCircleBox {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.mapelMetaDetails {
+  flex-grow: 1;
+}
+
+.mapelMetaDetails h3 {
+  margin: 0 0 2px 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+:global(.dark) .mapelMetaDetails h3 {
+  color: #f1f5f9;
+}
+
+.mapelMetaDetails p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+:global(.dark) .mapelMetaDetails p {
+  color: #94a3b8;
+}
+
+.arrowChevronGo {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+/* 🏷️ LEVEL 1: LIST PAKET SOAL VIEW */
+.headerNavLevelOne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.backLevelBtn {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+:global(.dark) .backLevelBtn {
+  background-color: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.subjectIndicatorBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.quizListWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chapterQuizItemRow {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+}
+:global(.dark) .chapterQuizItemRow {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.chapterQuizItemRow:hover {
+  transform: translateY(-1px);
+  background-color: #f8fafc;
+}
+:global(.dark) .chapterQuizItemRow:hover {
+  background-color: #243146;
+}
+
+.quizLeftMetaBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.quizNumberIndicator {
+  width: 34px;
+  height: 34px;
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #64748b;
+}
+:global(.dark) .quizNumberIndicator {
+  background-color: #1a2333;
+  border-color: #2d3b50;
+  color: #94a3b8;
+}
+
+.quizTitleMetaTxt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quizTitleMetaTxt h5 {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+:global(.dark) .quizTitleMetaTxt h5 {
+  color: #f1f5f9;
+}
+
+.quizTargetSub {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.arrowGoQuiz {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+/* 🌀 LOADING & EMPTY STATES */
+.loadingStateArea, .emptyStateContainer {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.spinnerLoadingIcon {
+  animation: spin 1s linear infinite;
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+  color: #2563eb;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}

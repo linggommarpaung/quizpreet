@@ -1,0 +1,377 @@
+/* client/src/pages/admin/QuizListPage.module.css */
+
+.adminContainer {
+  padding: 2rem;
+  background-color: var(--background-color, #f8fafc);
+  min-height: 100vh;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+}
+
+.adminHeader {
+  margin-bottom: 2.5rem;
+}
+
+.adminHeader h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-color, #1e293b);
+  margin: 1rem 0 0.25rem 0;
+}
+
+.subtitleHeader {
+  font-size: 0.95rem;
+  color: var(--text-color-subtle, #64748b);
+  margin: 0;
+}
+
+.navButton {
+  background: var(--secondary-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-color, #334155);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.navButton:hover {
+  background-color: var(--border-color, #f1f5f9);
+  transform: translateX(-2px);
+}
+
+.addButton {
+  background-color: var(--primary-color, #2563eb);
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  transition: all 0.2s ease;
+}
+
+.addButton:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-2px);
+}
+
+.adminMain {
+  margin-top: 1.5rem;
+}
+
+/* GRID MAPEL LEVEL 1 */
+.mapelGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.mapelCard {
+  background-color: var(--card-bg, #ffffff);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  cursor: pointer;
+  border: 1px solid var(--border-color, #e2e8f0);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease;
+}
+
+.mapelCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.06);
+  border-color: #2563eb;
+}
+
+.iconCircle {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.mapelInfo {
+  flex-grow: 1;
+}
+
+.mapelInfo h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-color, #1e293b);
+}
+
+.mapelInfo p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-color-subtle, #64748b);
+  line-height: 1.4;
+}
+
+/* LIST CARDS LEVEL 2 */
+.chapterList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chapterCard {
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chapterCard:hover {
+  transform: translateX(4px);
+  border-color: var(--primary-color, #2563eb);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+}
+
+.chapterCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.orderBadge {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color, #2563eb);
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chapterTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color, #1e293b);
+}
+
+.themeActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actionButton {
+  background: none;
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: #64748b;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionButton:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+.deleteButton:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+/* LOADING & EMPTY STATES */
+.loadingArea {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-color-subtle, #64748b);
+}
+
+.spinnerIcon {
+  font-size: 2.5rem;
+  animation: spin 1s linear infinite;
+  color: var(--primary-color, #2563eb);
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.emptyArea {
+  background-color: var(--card-bg, #ffffff);
+  border: 2px dashed var(--border-color, #cbd5e1);
+  border-radius: 16px;
+  padding: 4rem 2rem;
+  text-align: center;
+  max-width: 500px;
+  margin: 2rem auto;
+}
+
+.emptyIcon {
+  font-size: 3.5rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.emptyArea h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: var(--text-color, #1e293b);
+}
+
+.emptyArea p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-color-subtle, #64748b);
+  line-height: 1.5;
+}
+
+/* MODAL OVERLAY & POPUP BOX */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalContent {
+  background-color: var(--card-bg, #ffffff);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 460px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-color, #1e293b);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.formGroup {
+  margin-bottom: 1.25rem;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  background-color: var(--input-bg, #ffffff);
+  color: var(--text-color, #1e293b);
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: var(--primary-color, #2563eb);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+.cancelBtn {
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.submitBtn {
+  background-color: var(--primary-color, #2563eb);
+  border: none;
+  color: #ffffff;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15);
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 640px) {
+  .adminContainer { padding: 1rem; }
+  .adminHeader h1 { font-size: 1.75rem; }
+  .mapelGrid { grid-template-columns: 1fr; gap: 1rem; }
+  .mapelCard { padding: 1.2rem; }
+  .chapterCard { padding: 1rem; flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .themeActions { width: 100%; justify-content: flex-end; }
+}

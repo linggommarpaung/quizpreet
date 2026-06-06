@@ -1,0 +1,399 @@
+/* client/src/components/ui/MainLayout.module.css */
+
+.qpDashboardContainer {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--background-color, #f8fafc);
+    font-family: 'Poppins', sans-serif;
+}
+
+/* --- TOP NAVBAR --- */
+.topNavbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    background-color: var(--sidebar-bg, #ffffff);
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 65px;
+    z-index: 1000;
+    box-sizing: border-box;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.logoArea {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.logoText {
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--primary-color, #2563eb);
+}
+
+.logoBadge {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: var(--primary-color, #2563eb);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.userProfileWrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.iconBtn {
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--text-color, #475569);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.iconBtn:hover, .activeBtn {
+    background-color: rgba(37, 99, 235, 0.08);
+    color: var(--primary-color, #2563eb);
+}
+
+.adminBtn {
+    color: #3498db !important;
+    background-color: rgba(52, 152, 219, 0.1) !important;
+}
+
+.adminBtn:hover {
+    background-color: #3498db !important;
+    color: #fff !important;
+}
+
+/* --- DROPDOWN STYLE --- */
+.settingsGroup {
+    position: relative;
+}
+
+.settingsDropdown {
+    position: absolute;
+    right: 0;
+    top: 50px;
+    background: var(--sidebar-bg, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    width: 220px;
+    padding: 8px;
+    z-index: 1010;
+}
+
+.dropdownHeader {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+.dropdownItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    color: var(--text-color, #334155);
+}
+
+.dropdownMenuBtn {
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--text-color, #334155);
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+}
+
+.dropdownMenuBtn:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.logoutBtn {
+    color: #ef4444 !important;
+}
+
+.logoutBtn:hover {
+    background-color: rgba(239, 68, 68, 0.08) !important;
+}
+
+.dropdownDivider {
+    height: 1px;
+    background-color: var(--border-color, #e2e8f0);
+    margin: 6px 0;
+}
+
+/* --- MAIN CONTENT --- */
+.mainContent {
+    flex-grow: 1;
+    padding: 0px;
+    padding-top: 75px;
+    padding-bottom: 95px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* --- UPDATE BOTTON NAV HARUS LEBIH KECIL LAGI DI HP --- */
+.navContainerFixed {
+    position: fixed;
+    bottom: 8px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    pointer-events: none;
+    padding: 0 8px;
+}
+
+.qpBottomNavFloating {
+    pointer-events: auto;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background-color: var(--sidebar-bg, rgba(255, 255, 255, 0.97));
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color, rgba(226, 232, 240, 0.8));
+    padding: 4px 8px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 360px;
+    box-sizing: border-box;
+}
+
+.qpNavItem {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    color: #64748b;
+    padding: 4px 6px;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    min-width: 48px;
+}
+
+/* Ukuran Ikon Navigasi Dikecilkan Lagi */
+.navIcon {
+    font-size: 0.98rem;
+}
+
+/* Ukuran Teks Label Navigasi */
+.navLabel {
+    font-size: 0.6rem;
+    font-weight: 600;
+}
+
+.qpNavItem.active {
+    color: var(--primary-color, #2563eb);
+    background-color: rgba(37, 99, 235, 0.05);
+}
+
+
+/* Efek Icon & Label Navigasi */
+.navIcon {
+    font-size: 1.35rem;
+    transition: transform 0.2s ease;
+}
+
+.navLabel {
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+/* Hover effect khusus Desktop / Laptop */
+@media (min-width: 768px) {
+    .qpNavItem:hover {
+        color: var(--primary-color, #2563eb);
+        background-color: rgba(37, 99, 235, 0.05);
+    }
+    
+    .qpNavItem:hover .navIcon {
+        transform: translateY(-2px);
+    }
+}
+
+/* Rute Aktif (State Terpilih) */
+.qpNavItem.active {
+    color: var(--primary-color, #2563eb);
+    background-color: rgba(37, 99, 235, 0.08);
+}
+
+.qpNavItem.active .navIcon {
+    transform: scale(1.05);
+}
+
+/* ==================== 🚪 MODAL CONFIRMATION LOGOUT STYLE ==================== */
+
+.logoutModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--overlay-bg, rgba(15, 23, 42, 0.6));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999; /* Sangat tinggi melompati navbar fixed */
+    padding: 20px;
+}
+
+.logoutModalContent {
+    background-color: var(--card-bg, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 20px;
+    padding: 24px;
+    width: 100%;
+    max-width: 350px;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: logoutPopUpAnim 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes logoutPopUpAnim {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.logoutWarnIcon {
+    font-size: 2.2rem;
+    margin-bottom: 12px;
+}
+
+.logoutModalContent h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-color, #0f172a);
+}
+
+.logoutModalContent p {
+    margin: 0 0 20px 0;
+    font-size: 0.8rem;
+    color: var(--text-color-subtle, #64748b);
+    line-height: 1.5;
+}
+
+.logoutModalActions {
+    display: flex;
+    gap: 12px;
+}
+
+.logoutCancelBtn {
+    flex: 1;
+    background-color: var(--secondary-bg, #f1f5f9);
+    border: 1px solid var(--border-color, #e2e8f0);
+    color: var(--text-color, #334155);
+    padding: 10px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.logoutCancelBtn:hover {
+    background-color: var(--border-color, #cbd5e1);
+}
+
+.logoutConfirmBtn {
+    flex: 1;
+    background-color: #ef4444; /* Merah tegas untuk aksi destruktif keluar */
+    border: none;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.logoutConfirmBtn:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+}
+
+.logoutConfirmBtn:active {
+    transform: translateY(0);
+}
+
+.dropdownActionItemBtn {
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-color, #334155);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.dropdownActionItemBtn:hover {
+    background-color: var(--secondary-bg, #f1f5f9);
+    transform: translateX(2px);
+}
+
+/* ==================== STICKY SUB NAV GLOBAL FORUM ==================== */
+.stickySubNavContainerGlobal {
+    position: fixed;
+    top: 65px; /* Pas di bawah tinggi topNavbar kamu (65px) */
+    left: 0;
+    right: 0;
+    padding: 10px 16px;
+    background-color: var(--background-color, #f8fafc);
+    z-index: 990;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    transition: background-color 0.3s ease;
+}
+
+/* Dorong padding atas khusus konten utama agar tidak ketutupan subnav melayang */
+.qpMainContentWithPadding {
+    padding-top: 140px !important; /* Disesuaikan agar TopNav + SubNav muat sempurna */
+}
