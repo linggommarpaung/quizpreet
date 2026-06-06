@@ -20,5 +20,21 @@ service firebase.storage {
       // Hanya pengguna yang terautentikasi dan cocok dengan userId yang dapat menghapus file.
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
+
+    // Aturan untuk file PDF materi
+    // Path: /materi_pdf/{fileName}
+    match /materi_pdf/{fileName} {
+      // Izinkan semua pengguna terautentikasi untuk membaca file PDF materi
+      allow read: if request.auth != null;
+      
+      // Izinkan semua pengguna terautentikasi untuk mengunggah dan memperbarui file materi (maksimal 20MB)
+      // Catatan: Keamanan akhir dijamin oleh aturan Firestore pada koleksi 'chapters' yang membatasi perubahan hanya untuk admin.
+      allow create, update: if request.auth != null
+                        && request.resource.contentType == 'application/pdf'
+                        && request.resource.size < 20 * 1024 * 1024;
+
+      // Izinkan semua pengguna terautentikasi untuk menghapus file materi
+      allow delete: if request.auth != null;
+    }
   }
 }

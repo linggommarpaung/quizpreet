@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import { db } from '../config/firebaseConfig';
 import { collectionGroup, onSnapshot, query, where } from 'firebase/firestore';
+import { SOCKET_URL } from '../config/socketConfig';
 
 const SocketContext = createContext(null);
 
@@ -17,8 +18,8 @@ export const SocketProvider = ({ children }) => {
 
   // 1. Efek Manajemen Koneksi Socket Global
   useEffect(() => {
-    // Ganti IP dengan IP server mabar andalanmu
-    const newSocket = io('http://192.168.1.250:5000');
+    // Menghubungkan ke URL server mabar dinamis
+    const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
 
     // Dapatkan data user online secara berkala dari server

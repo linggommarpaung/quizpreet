@@ -70,5 +70,44 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
+    // ================================================
+    // ATURAN UNTUK OBROLAN PRIBADI (PERSONAL CHATS)
+    // ================================================
+    match /personal_chats/{roomId} {
+      // Izinkan akses jika pengguna adalah bagian dari roomId (format: uidA_uidB)
+      allow read, write: if request.auth != null && (roomId.matches('^' + request.auth.uid + '_.*') || roomId.matches('.*_' + request.auth.uid + '$'));
+
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null && (roomId.matches('^' + request.auth.uid + '_.*') || roomId.matches('.*_' + request.auth.uid + '$'));
+      }
+    }
+
+    // Aturan khusus untuk collection group query 'messages'
+    match /{path=**}/messages/{messageId} {
+      allow read: if request.auth != null && (
+        path[1].matches('^' + request.auth.uid + '_.*') || path[1].matches('.*_' + request.auth.uid + '$')
+      );
+      allow write: if request.auth != null && (
+        path[1].matches('^' + request.auth.uid + '_.*') || path[1].matches('.*_' + request.auth.uid + '$')
+      );
+    }
+
+    // Aturan untuk materi belajar (chapters)
+    match /chapters/{chapterId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Aturan untuk metadata forum/aplikasi (metadata)
+    match /metadata/{docId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // Aturan untuk obrolan umum (global_chats)
+    match /global_chats/{chatId} {
+      allow read, write: if request.auth != null;
+    }
+
   }
 }

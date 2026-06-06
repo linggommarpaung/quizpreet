@@ -17,9 +17,10 @@ import {
     FaCircleInfo
 } from 'react-icons/fa6';
 import styles from './QuizLobby.module.css';
+import { SOCKET_URL } from '../config/socketConfig';
 
-// Koneksi socket diarahkan ke IP lokal HP Termux port backend 5000
-const socket = io('http://192.168.1.250:5000');
+// Koneksi socket diarahkan secara dinamis
+const socket = io(SOCKET_URL);
 
 const QuizLobby = () => {
     const { currentUser } = useAuth();

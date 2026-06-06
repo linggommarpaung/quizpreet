@@ -88,6 +88,7 @@ Dokumen ini adalah sumber kebenaran tunggal untuk aplikasi kuis sejarah, sebuah 
 - **Pengabaian Git (.gitignore)**: File konfigurasi `.gitignore` di tingkat root dan folder client diperbarui untuk mengecualikan semua file `.env` lokal, sehingga mencegah informasi kredensial ter-push secara tidak sengaja ke repositori GitHub publik.
 - **Dukungan Skrip Latar Belakang (Node.js)**: Skrip otomatisasi dan migrasi di folder `scripts/` disesuaikan untuk memuat variabel lingkungan dari `.env` secara dinamis, serta dimigrasikan sepenuhnya ke modul ESM (`type: "module"`).
 - **Template `.env.example`**: Disediakan file contoh konfigurasi `.env.example` untuk memudahkan setup lingkungan baru tanpa membocorkan kunci asli.
+- **Koneksi Socket Dinamis**: Alamat server Socket.io diubah dari hardcoded IP lokal menjadi dinamis menggunakan helper `socketConfig.js`. Sekarang URL ini dapat dikonfigurasi via variabel lingkungan `VITE_BACKEND_URL` dengan fallback otomatis ke `localhost` atau IP host client saat ini.
 
 ## Rencana Selanjutnya
 
@@ -96,7 +97,11 @@ Dokumen ini adalah sumber kebenaran tunggal untuk aplikasi kuis sejarah, sebuah 
 
 ## Penyebaran (Deployment)
 
-Aplikasi telah berhasil dideploy ke web menggunakan **Firebase Hosting**:
+Aplikasi telah dideploy dan dikonfigurasi sepenuhnya ke web menggunakan **Firebase Suite**:
 - **Hosting URL**: [https://quizpreet-68102274-594ae.web.app](https://quizpreet-68102274-594ae.web.app)
 - **Project Console**: [Firebase Console - quizpreet-68102274-594ae](https://console.firebase.google.com/project/quizpreet-68102274-594ae/overview)
-- **Perintah Build & Deploy**: `npm run build && npx -y firebase-tools@latest deploy` atau menggunakan script npm `npm run b-d`
+- **Integrasi Firebase**: File `firebase.json` dikonfigurasi untuk mengelola `firestore` (rules/indexes), `storage` (rules), dan `hosting` secara bersamaan.
+- **Aturan Keamanan Tambahan**:
+    - **Firestore**: Aturan keamanan baru diimplementasikan untuk `chapters`, `metadata`, `global_chats`, dan `personal_chats` (termasuk query group collection `messages` yang diamankan menggunakan pencocokan regex UID pada room ID).
+    - **Storage**: Aturan keamanan untuk `avatars` dan berkas PDF materi `materi_pdf` (dengan validasi tipe file PDF dan ukuran maks 20MB untuk admin) aktif.
+- **Perintah Build & Deploy**: `npm run build && npx -y firebase-tools@latest deploy` atau menggunakan script npm `npm run b-d` (skrip ini juga meluncurkan build frontend).

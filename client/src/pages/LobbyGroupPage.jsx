@@ -12,8 +12,9 @@ import {
     FaMicrophone, FaMicrophoneSlash, FaVolumeHigh, FaVolumeXmark
 } from 'react-icons/fa6';
 import styles from './LobbyGroupPage.module.css';
+import { SOCKET_URL } from '../config/socketConfig';
 
-const socket = io('http://192.168.1.250:5000');
+const socket = io(SOCKET_URL);
 
 const LobbyGroupPage = () => {
     const { currentUser } = useAuth();
