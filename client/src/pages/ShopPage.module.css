@@ -1,0 +1,220 @@
+/* client/src/pages/ShopPage.module.css */
+
+/* Kunci wrapper utama agar halaman tidak bisa ikut ter-scroll */
+.shopPageContainer {
+  background-color: var(--background-color, #f8fafc);
+  position: fixed;
+  top: 65px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(100vh - 65px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease;
+}
+
+/* ==========================================================================
+   👑 1. FIXED HEADER AREA (TETAP DIAM DI ATAS)
+   ========================================================================== */
+.fixedHeaderArea {
+  background-color: var(--card-bg, #ffffff);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.headerTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.backButtonCircle {
+  background-color: var(--background-color, #f1f5f9);
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-color, #475569);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.headerTopRow h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-color, #0f172a);
+}
+
+.coinBadgeDisplay {
+  background-color: rgba(234, 179, 8, 0.1);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #ca8a04;
+}
+
+.coinGoldIcon { color: #eab308; }
+.headerSubInfo { margin: 0; font-size: 0.7rem; color: #64748b; }
+
+/* ==========================================================================
+   🧩 2. DIV INTERNAL VERTICAL SCROLL (PER TIER BISA DI-SCROLL KE BAWAH)
+   ========================================================================== */
+.verticalScrollContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 0 95px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tierSectionBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tierTitleHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 0 16px; /* Jarak teks judul agar sejajar dengan card */
+}
+
+.tierStandardHeader { color: #64748b; }
+.tierRareHeader { color: #a855f7; }
+.tierEpicHeader { color: #ec4899; }
+
+/* ==========================================================================
+   ↔️ 3. HORIZONTAL SCROLL LIST (CARD BERBARIS DAN BISA DI-SCROLL KE SAMPING)
+   ========================================================================== */
+.horizontalScrollWrapper {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto; 
+  padding: 4px 16px 12px 16px;
+  gap: 12px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Menyembunyikan scrollbar bawaan browser agar UI terlihat bersih seperti aplikasi native HP */
+.horizontalScrollWrapper::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==========================================================================
+   📦 4. STYLING CARD PRODUK (MUNCUL 2 CARD KE SAMPING SECARA PAS)
+   ========================================================================== */
+.borderProductCard {
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: 12px;
+  
+  /* LOGIKA UTAMA: Lebar di-set setengah layar dikurang jarak gap agar pas muncul berdua */
+  width: calc(52vw - 20px); 
+  flex-shrink: 0; /* Mencegah card menyusut/gepeng */
+  scroll-snap-align: start; /* Titik kunci snap swipe */
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+  transition: all 0.2s ease;
+}
+
+.cardActiveActive {
+  border-color: var(--primary-color, #2563eb);
+  background-color: rgba(37, 99, 235, 0.01);
+}
+
+.previewBoxWrapper {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatarProductDummy {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.productDetailsMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 52px; /* Mengunci tinggi bungkus teks agar posisi tombol sejajar rata air */
+  justify-content: center;
+}
+
+.productDetailsMeta h5 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-color, #0f172a);
+}
+
+.productDetailsMeta p {
+  margin: 0;
+  font-size: 0.65rem;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+/* Button States */
+.actionButtonBase {
+  border: none;
+  width: 100%; /* Tombol memenuhi lebar card bawah */
+  padding: 8px 0;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btnBuyState { background-color: #fef08a; color: #713f12; }
+.btnUseState { background-color: var(--background-color, #f1f5f9); border: 1px solid var(--border-color, #e2e8f0); color: var(--text-color, #334155); }
+.btnActiveState { background-color: var(--primary-color, #2563eb); color: #ffffff; cursor: default; }
+
+/* ==========================================================================
+   🌙 5. SINKRONISASI DARK MODE GLOBAL
+   ========================================================================== */
+:global(.dark) .fixedHeaderArea { background-color: #1e293b !important; border-color: #334155 !important; }
+:global(.dark) .backButtonCircle { background-color: #334155 !important; border-color: #475569 !important; color: #f1f5f9 !important; }
+:global(.dark) .headerTopRow h4 { color: #f8fafc !important; }
+:global(.dark) .borderProductCard { background-color: #1e293b !important; border-color: #334155 !important; }
+:global(.dark) .cardActiveActive { border-color: var(--primary-color, #2563eb) !important; }
+:global(.dark) .productDetailsMeta h5 { color: #f8fafc !important; }
+:global(.dark) .btnUseState { background-color: #334155 !important; border-color: #475569 !important; color: #f1f5f9 !important; }

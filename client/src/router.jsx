@@ -29,6 +29,7 @@ const AddThemePage = lazy(() => import('./pages/AddThemePage'));
 const EditQuestionPage = lazy(() => import('./pages/EditQuestionPage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 const MaterialPage = lazy(() => import('./pages/MaterialPage'));
+const ShopPage = lazy(() => import('./pages/ShopPage'));
 const MateriListPage = lazy(() => import('./pages/admin/MateriListPage'));
 const MateriSubjectPage = lazy(() => import('./pages/admin/MateriSubjectPage'));
 
@@ -101,6 +102,16 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <MainLayout>
               <DailyPathDashboard />
+            </MainLayout>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'shop',
+        element: (
+          <RequireAuth>
+            <MainLayout>
+              <ShopPage />
             </MainLayout>
           </RequireAuth>
         ),
