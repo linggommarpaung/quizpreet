@@ -20,6 +20,11 @@ const DailyPathDashboard = () => {
     
     // State control index halaman slider (0 = Materi, 1 = Kuis)
     const [activeSliderIndex, setActiveSliderIndex] = useState(0);
+    const [dynamicMaterials, setDynamicMaterials] = useState([]);
+    const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
+    
+    const [realRank, setRealRank] = useState('-');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const hasSeenInfo = localStorage.getItem('hasSeenFullscreenInfo');
@@ -41,9 +46,6 @@ const DailyPathDashboard = () => {
         setShowInfoModal(false);
         toast.success('Selamat belajar! Jangan lupa cek menu Pengaturan ya 🚀');
     };
-    
-    const [dynamicMaterials, setDynamicMaterials] = useState([]);
-const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
 
     const handleShortcutMateriClick = (pathId) => {
         navigate('/forum', { state: { activeTab: 'materi', autoOpenId: pathId } });
@@ -52,110 +54,181 @@ const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
     const handleShortcutQuizClick = () => {
         navigate('/quiz');
     };
-    
-    const [allPaths, setAllPaths] = useState([]);
-    const [userProgress, setUserProgress] = useState({ completedUnits: [] });
-    const [realRank, setRealRank] = useState('-');
-    const [loading, setLoading] = useState(true);
 
+    // =======================================================================
+    // 🟢 LOGIKA AMBIL DATA PROGRESS DAN CHAPTER SECARA DINAMIS
+    // =======================================================================
     const fetchData = useCallback(async () => {
-    if (!currentUser?.uid) return;
-    setLoading(true);
-    try {
-        // A. Ambil Progres User & Data Leaderboard
-        const [progressData, leaderboardData] = await Promise.all([
-            getUserProgress(currentUser.uid),
-            getLeaderboardData()
-        ]);
-        
-        if (progressData) {
-            setUserProgress(progressData);
+        if (!currentUser?.uid) return;
+        setLoading(true);
+        try {
+            console.log("Dashboard fetch data untuk UID:", currentUser.uid);
             
-            /* B. LOGIKA FILTER MAPEL DARI DATABASE
-               Asumsi struktur progressData: 
-               {
-                  mtk: { order: 1, time: Timestamp/Date },
-                  ipa: { order: 2, time: Timestamp/Date },
-                  completedUnits: [...]
-               }
-            */
-            const activeSubjects = [];
+            // A. Ambil Progres User & Data Leaderboard secara paralel
+            const [progressData, leaderboardData] = await Promise.all([
+                getUserProgress(currentUser.uid),
+                getLeaderboardData()
+            ]);
             
-            // List mapel yang ada di sistem kamu (bisa disesuaikan)
-            const avaibleSubjects = ['mtk', 'ipa', 'ips', 'inggris', 'indo'];
-            
-            avaibleSubjects.forEach(subject => {
-                if (progressData[subject] && progressData[subject].order) {
-                    activeSubjects.push({
-                        subjectId: subject,
-                        currentOrder: progressData[subject].order,
-                        // Konversi ke milidetik untuk sorting akurat baik berupa Firestore Timestamp atau Date string
-                        time: progressData[subject].time?.seconds 
-                            ? progressData[subject].time.seconds * 1000 
-                            : new Date(progressData[subject].time).getTime() || 0
+            if (progressData) {
+                const availableSubjects = ['mtk', 'ipa', 'ips', 'inggris', 'indonesia'];
+                
+                // =======================================================================
+                // 1. PROSES FILTER MATERI (KODE BACKUP AMAN KAMU - TIDAK DIUBAH)
+                // =======================================================================
+                const activeSubjects = [];
+                availableSubjects.forEach(subject => {
+                    const subjectMap = progressData[subject];
+                    if (subjectMap && subjectMap.order !== undefined && Number(subjectMap.order) > 0) {
+                        let timestampMs = 0;
+                        if (subjectMap.time) {
+                            if (typeof subjectMap.time.toDate === 'function') {
+                                timestampMs = subjectMap.time.toDate().getTime();
+                            } else if (subjectMap.time.seconds) {
+                                timestampMs = subjectMap.time.seconds * 1000;
+                            } else {
+                                timestampMs = new Date(subjectMap.time).getTime() || Date.now();
+                            }
+                        } else {
+                            timestampMs = Date.now(); 
+                        }
+
+                        activeSubjects.push({
+                            subjectId: subject,
+                            currentOrder: Number(subjectMap.order),
+                            time: timestampMs
+                        });
+                    }
+                });
+
+                activeSubjects.sort((a, b) => b.time - a.time);
+                const topTwoSubjects = activeSubjects.slice(0, 2);
+
+                const allChaptersFromDB = await getAllDailyPaths(); // Master Materi/Chapters
+                const filteredMaterials = [];
+
+                const formatSubjectName = (id) => {
+                    if (id === 'mtk') return 'Matematika';
+                    if (id === 'ipa') return 'IPA';
+                    if (id === 'ips') return 'IPS';
+                    if (id === 'inggris') return 'Bahasa Inggris';
+                    if (id === 'indonesia') return 'Bahasa Indonesia';
+                    return id.toUpperCase();
+                };
+
+                topTwoSubjects.forEach(activeSub => {
+                    const matchedChapter = allChaptersFromDB.find(ch => 
+                        String(ch.subjectId).toLowerCase() === String(activeSub.subjectId).toLowerCase() && 
+                        Number(ch.order) === Number(activeSub.currentOrder)
+                    );
+
+                    if (matchedChapter) {
+                        filteredMaterials.push({
+                            id: matchedChapter.id || matchedChapter.chapterId || matchedChapter.uid,
+                            title: matchedChapter.title || `Bab ${matchedChapter.order}`,
+                            subject: formatSubjectName(activeSub.subjectId),
+                            xpReward: matchedChapter.xpReward || 20
+                        });
+                    } else {
+                        filteredMaterials.push({
+                            id: `fallback-${activeSub.subjectId}-${activeSub.currentOrder}`,
+                            title: `Bab ${activeSub.currentOrder}`,
+                            subject: formatSubjectName(activeSub.subjectId),
+                            xpReward: 20
+                        });
+                    }
+                });
+
+
+                // =======================================================================
+                // 2. PROSES FILTER QUIZ YANG BARU (BERDASARKAN orderq & timeq DI DALAM MAP MAPEL)
+                // =======================================================================
+                const activeQuizzes = [];
+                
+                availableSubjects.forEach(subject => {
+                    const subjectMap = progressData[subject];
+                    
+                    if (subjectMap && subjectMap.orderq !== undefined && Number(subjectMap.orderq) > 0) {
+                        let timestampMs = 0;
+                        
+                        if (subjectMap.timeq) {
+                            if (typeof subjectMap.timeq.toDate === 'function') {
+                                timestampMs = subjectMap.timeq.toDate().getTime();
+                            } else if (subjectMap.timeq.seconds) {
+                                timestampMs = subjectMap.timeq.seconds * 1000;
+                            } else {
+                                timestampMs = new Date(subjectMap.timeq).getTime() || Date.now();
+                            }
+                        } else {
+                            timestampMs = Date.now(); 
+                        }
+
+                        activeQuizzes.push({
+                            subjectId: subject,       
+                            currentOrderQ: Number(subjectMap.orderq),
+                            timeq: timestampMs
+                        });
+                    }
+                });
+
+                activeQuizzes.sort((a, b) => b.timeq - a.timeq);
+                const topTwoQuizzes = activeQuizzes.slice(0, 2);
+
+                const filteredQuizzes = [];
+                const allQuizFromDB = allChaptersFromDB; 
+
+                topTwoQuizzes.forEach(activeQuiz => {
+                    const matchedQuiz = allQuizFromDB.find(pathDoc => {
+                        if (!pathDoc.themeCode) return false;
+                        
+                        const codeNumbers = pathDoc.themeCode.replace(/^\D+/g, ''); 
+                        const themeOrder = Number(codeNumbers);
+                        const themeLetters = pathDoc.themeCode.replace(/[0-9]/g, '').toLowerCase();
+
+                        return themeLetters === activeQuiz.subjectId && themeOrder === activeQuiz.currentOrderQ;
                     });
-                }
-            });
 
-            // Urutkan berdasarkan waktu pengerjaan paling baru (descending)
-            activeSubjects.sort((a, b) => b.time - a.time);
+                    if (matchedQuiz) {
+                        filteredQuizzes.push({
+                            id: matchedQuiz.id || `quiz-${activeQuiz.subjectId}-${activeQuiz.currentOrderQ}`,
+                            title: matchedQuiz.theme || `Kuis Tantangan ${matchedQuiz.themeCode}`,
+                            subject: formatSubjectName(activeQuiz.subjectId),
+                            isCompleted: true
+                        });
+                    } else {
+                        filteredQuizzes.push({
+                            id: `quiz-fallback-${activeQuiz.subjectId}-${activeQuiz.currentOrderQ}`,
+                            title: `Kuis Tantangan Bab ${activeQuiz.currentOrderQ}`,
+                            subject: formatSubjectName(activeQuiz.subjectId),
+                            isCompleted: true
+                        });
+                    }
+                });
 
-            // Ambil maksimal 2 mapel teratas yang paling baru beraktivitas
-            const topTwoSubjects = activeSubjects.slice(0, 2);
-
-            // C. Query ke koleksi 'chapters' berdasarkan subjectId & order
-            // Catatan: Pastikan fungsi getAllDailyPaths() kamu bisa menerima filter atau kamu memfilter hasil buatan seluruh chapter.
-            const allChaptersFromDB = await getAllDailyPaths(); // mengambil seluruh dokumen dari koleksi 'chapters'
-            
-            const filteredMaterials = [];
-            const filteredQuizzes = [];
-
-            topTwoSubjects.forEach(activeSub => {
-                // Cari di database chapter yang subjectId dan order-nya pas cocok
-                const matchedChapter = allChaptersFromDB.find(ch => 
-                    ch.subjectId === activeSub.subjectId && 
-                    Number(ch.order) === Number(activeSub.currentOrder)
-                );
-
-                if (matchedChapter) {
-                    // Masukkan ke daftar Materi Antrean
-                    filteredMaterials.push({
-                        id: matchedChapter.id || matchedChapter.chapterId,
-                        title: matchedChapter.title || `Bab ${matchedChapter.order}`,
-                        subject: matchedChapter.subjectName || activeSub.subjectId.toUpperCase(),
-                        xpReward: matchedChapter.xpReward || 100
-                    });
-
-                    // Masukkan ke daftar Kuis Antrean (Persiapan fitur kuis berikutnya)
-                    filteredQuizzes.push({
-                        id: `quiz-${matchedChapter.id}`,
-                        title: `Kuis ${matchedChapter.title || matchedChapter.order}`,
-                        subject: matchedChapter.subjectName || activeSub.subjectId.toUpperCase(),
-                        isCompleted: false
-                    });
-                }
-            });
-
-            // Set ke state untuk me-render UI secara dinamis
-            setDynamicMaterials(filteredMaterials);
-            setDynamicQuizzes(filteredQuizzes);
-        }
-
-        // D. Hitung Real Rank Leaderboard seperti biasa
-        if (leaderboardData && leaderboardData.length > 0) {
-            const userIndex = leaderboardData.findIndex(player => player.uid === currentUser.uid);
-            if (userIndex !== -1) {
-                setRealRank(`#${userIndex + 1}`);
-            } else {
-                setRealRank('-');
+                console.log("Materi Siap Tampil:", filteredMaterials);
+                console.log("Kuis Siap Tampil (Berdasarkan timeq):", filteredQuizzes);
+                
+                setDynamicMaterials(filteredMaterials);
+                setDynamicQuizzes(filteredQuizzes);
             }
+
+            // B. Hitung peringkat asli di Leaderboard
+            if (leaderboardData && leaderboardData.length > 0) {
+                const userIndex = leaderboardData.findIndex(player => player.uid === currentUser.uid);
+                if (userIndex !== -1) {
+                    setRealRank(`#${userIndex + 1}`);
+                } else {
+                    setRealRank('-');
+                }
+            }
+        } catch (err) {
+            console.error("Gagal memuat data path edukasi:", err);
+            toast.error("Gagal memperbarui antrean belajar hari ini.");
+        } finally {
+            setLoading(false);
         }
-    } catch (err) {
-        console.error("Gagal memuat data path edukasi:", err);
-    } finally {
-        setLoading(false);
-    }
-}, [currentUser?.uid, getLeaderboardData]);
+    }, [currentUser, getLeaderboardData]);
+
 
     useEffect(() => {
         if (!authLoading) fetchData();
@@ -167,10 +240,28 @@ const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
     const userCoins = currentUser?.koin ?? 0;
     const userBorderClass = currentUser?.activeBorder || 'borderNormal';
 
+    // =======================================================================
+    // 🟢 LOGIKA PENETAPAN LEVEL DAN KALKULASI SLIDE BAR EXP
+    // =======================================================================
+    const userLevel = currentUser?.level ?? 1;
+    const totalExp = currentUser?.exp ?? 0;
+    const score = currentUser?.score ?? 0;
+
+    // Batas target EXP maksimal di level saat ini (Kelipatan Level * 100)
+    const nextLevelExpTarget = userLevel * 100;
+
+    // Hitung sisa akumulasi EXP murni untuk level berjalan saja menggunakan Modulo
+    // Jika level 1, pengurang level sebelumnya adalah 0
+    const prevLevelsCombinedExp = ((userLevel - 1) * userLevel) / 2 * 100;
+    const currentLevelExpProgress = Math.max(0, totalExp - prevLevelsCombinedExp);
+
+    // Ambil persentase lebar bar (maksimal 100%)
+    const expPercentage = Math.min(100, Math.floor((currentLevelExpProgress / nextLevelExpTarget) * 100));
+
     return (
         <div className={styles.dashboardContainer}>
             
-            {/* 🔒 AREA ATAS FIXED (HEADER & STATS) */}
+            {/* AREA ATAS FIXED (HEADER & STATS) */}
             <div className={styles.fixedTopSection}>
                 <header className={styles.topHeader}>
                     <div className={styles.userGreet}>
@@ -183,7 +274,22 @@ const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
                         </div>
                         <div className={styles.greetTextWrapper}>
                             <h2>Halo, {currentUser?.displayName?.split(' ')[0] || 'Pelajar'} 👋</h2>
-                            <p>Ayo taklukkan materi hari ini!</p>
+                            
+                            {/* INDIKATOR LAYOUT LEVEL DAN SLIDE BAR EXP */}
+                            <div className={styles.levelProgressContainer}>
+    <span className={styles.levelBadgeText}>Lv. {userLevel}</span>
+    <div className={styles.expTrackSliderOuter}>
+        <div 
+            className={styles.expFillSliderInner} 
+            style={{ width: `${expPercentage}%` }}
+        />
+        {/* Angka EXP sekarang ada di dalam bar */}
+        <span className={styles.expNumericIndicator}>
+            {currentLevelExpProgress}/{nextLevelExpTarget} XP
+        </span>
+    </div>
+</div>
+
                         </div>
                     </div>
                     <button className={styles.notificationBtn} onClick={() => navigate('/leaderboard')}>
@@ -196,8 +302,8 @@ const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
                     <div className={styles.statItem}>
                         <FaStar className={styles.statIconStar} />
                         <div className={styles.statInfo}>
-                            <span>POIN</span>
-                            <strong>{currentUser?.score?.toLocaleString('id-ID') || currentUser?.points?.toLocaleString('id-ID') || 0}</strong>
+                            <span>Score</span>
+                            <strong>{score.toLocaleString('id-ID')}</strong>
                         </div>
                     </div>
                     <div className={styles.divider} />
@@ -219,16 +325,16 @@ const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
                 </section>
             </div>
 
-            {/* 🔄 AREA CAROUSEL SLIDER (GESER KANAN KIRI BERDAMPINGAN) */}
-                        <div className={styles.sliderOuterViewport}>
+            {/* AREA CAROUSEL SLIDER */}
+            <div className={styles.sliderOuterViewport}>
                 <div 
                     className={styles.sliderTrackAnimated} 
-                    style={{ transform: `translateX(-${activeSliderIndex * 50}%)` }} // Karena track 200%, geser per slide adalah 50% dari total width track
+                    style={{ transform: `translateX(-${activeSliderIndex * 50}%)` }}
                 >
                     {/* SLIDE 1: MISI PEMBELAJARAN */}
                     <div className={styles.singleSlidePane}>
                         <div className={styles.sectionHeader}>
-                            <h3>Misi Pembelajaran Hari Ini</h3>
+                            <h3>Misi Pembelajaran Terakhir</h3>
                             <span className={styles.seeAllLink} onClick={() => navigate('/forum')}>
                                 Lihat Semua
                             </span>
@@ -246,7 +352,7 @@ const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
                                         </div>
                                         <div className={styles.quizInfo}>
                                             <h4>{path.title}</h4>
-                                            <p>{path.subject} • {path.xpReward} XP</p>
+                                            <p>{path.subject} • +{path.xpReward} EXP</p>
                                         </div>
                                         <div className={styles.actionStatusZoneRight}>
                                             <FaChevronRight className={styles.arrowIcon} />
@@ -254,15 +360,15 @@ const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
                                     </div>
                                 ))
                             ) : (
-                                <div className={styles.emptyCardMini}>Belum ada materi aktif hari ini.</div>
+                                <div className={styles.emptyCardMini}>Belum ada riwayat materi aktif belakangan ini.</div>
                             )}
                         </div>
                     </div>
 
-                    {/* SLIDE 2: REKOMENDASI TANTANGAN QUIZ (KUIS - MAKSIMAL 2 ITEM) */}
+                    {/* SLIDE 2: REKOMENDASI TANTANGAN QUIZ */}
                     <div className={styles.singleSlidePane}>
                         <div className={styles.sectionHeader}>
-                            <h3>Kuis Pilihan Untukmu</h3>
+                            <h3>Kuis Selesai Review</h3>
                             <span className={styles.seeAllLink} onClick={() => navigate('/quiz')}>
                                 Lihat Semua
                             </span>
@@ -275,24 +381,20 @@ const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
                                         className={styles.pathChallengeCardRow}
                                         onClick={handleShortcutQuizClick}
                                     >
-                                        <div className={styles.pathIconBoxLeft} style={{ backgroundColor: 'rgba(37, 99, 235, 0.1)', color: '#2563eb' }}>
+                                        <div className={styles.pathIconBoxLeft} style={{ backgroundColor: 'rgba(22, 163, 74, 0.1)', color: '#16a34a' }}>
                                             <FaStar />
                                         </div>
                                         <div className={styles.quizInfo}>
                                             <h4>{quiz.title}</h4>
-                                            <p>{quiz.subject} • <span className={quiz.isCompleted ? styles.statusDoneTxt : styles.statusProgressTxt}>{quiz.isCompleted ? 'Selesai' : 'Belum Mulai'}</span></p>
+                                            <p>{quiz.subject} • <span className={styles.statusDoneTxt}>Selesai</span></p>
                                         </div>
                                         <div className={styles.actionStatusZoneRight}>
-                                            {quiz.isCompleted ? (
-                                                <span className={styles.badgeDoneLabel}>Selesai</span>
-                                            ) : (
-                                                <FaChevronRight className={styles.arrowIcon} />
-                                            )}
+                                            <span className={styles.badgeDoneLabel}>Lulus</span>
                                         </div>
                                     </div>
                                 ))
                             ) : (
-                                <div className={styles.emptyCardMini}>Belum ada kuis tersedia.</div>
+                                <div className={styles.emptyCardMini}>Belum ada kuis yang diulas.</div>
                             )}
                         </div>
                     </div>
@@ -305,8 +407,7 @@ const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
                 </div>
             </div>
 
-
-            {/* ==================== 🎮 MODE KOMPETISI (MABAR) - PAS DI BAWAH ==================== */}
+            {/* MODE KOMPETISI (MABAR) */}
             <section className={styles.sectionAreaMabar}>
                 <div className={styles.sectionHeader}>
                     <h3>Mode Kompetisi (Mabar)</h3>

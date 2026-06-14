@@ -461,3 +461,56 @@
     width: 100%;
     box-sizing: border-box;
 }
+
+.levelProgressContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.levelBadgeText {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #eab308;
+    background: rgba(234, 179, 8, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+/* Track luar dibuat lebih besar/tinggi */
+.expTrackSliderOuter {
+    position: relative;
+    width: 140px; /* Ditambah sedikit lebarnya agar teks muat pas di dalam */
+    height: 16px; /* Diperbesar dari 8px ke 16px */
+    background-color: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.expFillSliderInner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    border-radius: 999px;
+    transition: width 0.4s ease-out;
+    z-index: 1; /* Di bawah teks */
+}
+
+/* Teks angka dikecilkan dan ditaruh di tengah bar */
+.expNumericIndicator {
+    position: relative;
+    z-index: 2; /* Di atas isi bar agar tidak ketutupan warna gradasi */
+    font-size: 0.65rem; /* Ukuran tulisan dikecilkan */
+    font-weight: 800;
+    color: #1e293b; /* Warna gelap agar kontras saat bar kosong atau penuh */
+    text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.8); /* Efek bayangan tipis agar tetap terbaca jelas */
+    pointer-events: none; /* Biar gak mengganggu klik */
+    white-space: nowrap;
+}

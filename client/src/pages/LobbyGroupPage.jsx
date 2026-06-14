@@ -1,23 +1,26 @@
-// client/src/pages/LobbyGroupPage.jsx
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { 
     FaArrowLeft, FaUsers, FaPlus, FaRightToBracket, FaCopy, 
     FaCheck, FaHourglassHalf, FaBookOpen, FaShieldHalved, FaShuffle, 
     FaGear, FaArrowRightArrowLeft, FaRightFromBracket,
-    FaMicrophone, FaMicrophoneSlash, FaVolumeHigh, FaVolumeXmark
+    FaMicrophone, FaMicrophoneSlash, FaVolumeHigh, FaVolumeXmark,
+    FaSpinner, FaXmark 
 } from 'react-icons/fa6';
 import styles from './LobbyGroupPage.module.css';
-import { SOCKET_URL } from '../config/socketConfig';
 
-const socket = io(SOCKET_URL);
+import { db } from '../config/firebaseConfig'; 
+import { 
+    doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, arrayUnion, collection 
+} from 'firebase/firestore';
+
+// 🌐 MENGIKUTI LEADERBOARD: Mendukung efek border avatar toko secara realtime
+import '../components/border.css'; 
 
 const LobbyGroupPage = () => {
-    const { currentUser } = useAuth();
+    const { currentUser, getLeaderboardData } = useAuth();
     const { roomId } = useParams(); 
     const navigate = useNavigate();
 
@@ -25,6 +28,10 @@ const LobbyGroupPage = () => {
     const [viewMode, setViewMode] = useState(roomId ? 'inside' : 'menu'); 
     const [inputRoomCode, setInputRoomCode] = useState('');
     const [showExitModal, setShowExitModal] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // 🌟 SEPERTI LEADERBOARD: State untuk menampung data preview avatar yang sedang diklik
+    const [selectedAvatar, setSelectedAvatar] = useState(null);
 
     // State Pembuat Sesi
     const [selectedSubject, setSelectedSubject] = useState('mtk');
@@ -37,10 +44,10 @@ const LobbyGroupPage = () => {
     const [isSpeakerOn, setIsSpeakerOn] = useState(false);
     const [isMicOn, setIsMicOn] = useState(false);
 
-    // WebRTC Refs untuk menampung Stream Audio dan Koneksi Peer-to-Peer
+    // WebRTC Refs
     const localStreamRef = useRef(null);
-    const peersRef = useRef({}); // Menyimpan koneksi RTCPeerConnection ke tiap teman
-    const hasRequestedStatus = useRef(false);
+    const peersRef = useRef({}); 
+    const hasJoinedRoom = useRef(false);
 
     const subjectsList = [
         { id: 'mtk', name: 'Matematika', icon: '📐' },
@@ -49,140 +56,153 @@ const LobbyGroupPage = () => {
         { id: 'bing', name: 'Bahasa Inggris', icon: '🇬🇧' }
     ];
 
-    // ==================== REALTIME WEBSOCKET LISTENERS ====================
+    // ==================== 🟢 LISTENER 1: REALTIME UI LOBBY ====================
     useEffect(() => {
-        socket.removeAllListeners('group_room_created');
-        socket.removeAllListeners('group_room_updated');
-        socket.removeAllListeners('group_join_error');
-        socket.removeAllListeners('group_action_error');
-        socket.removeAllListeners('group_room_dissolved');
-        socket.removeAllListeners('webrtc_signal_received');
+        if (!roomId || !currentUser) return;
 
-        socket.on('group_room_created', ({ roomId }) => {
-            toast.success('Lobby Grup Berhasil Dibuat! 👥', { id: 'grp_create' });
-            setViewMode('inside');
-            navigate(`/contest/group/lobby/${roomId}`);
-        });
+        const roomRef = doc(db, 'lobbyGroups', roomId.toUpperCase());
 
-        socket.on('group_room_updated', (data) => {
-            setLobbyData(data);
-        });
-
-        socket.on('group_join_error', ({ message }) => {
-            toast.error(message, { id: 'grp_join_err' });
-            closeVoiceChat();
-            setLobbyData(null);
-            setViewMode('menu');
-            navigate('/contest/group');
-        });
-
-        socket.on('group_action_error', ({ message }) => {
-            toast.error(message, { id: 'grp_action_err' });
-        });
-
-        socket.on('group_room_dissolved', ({ message }) => {
-            toast.error(message, { id: 'grp_dissolve' });
-            closeVoiceChat();
-            setLobbyData(null);
-            setViewMode('menu');
-            navigate('/contest/group');
-        });
-
-        // LISTENER WEBRTC: Menerima jabat tangan audio dari kawan satu tim
-        socket.on('webrtc_signal_received', async ({ senderSocketId, signalData, senderUid }) => {
-            if (!isSpeakerOn) return; // Hiraukan sinyal jika speaker mati
-            
-            // Cek apakah pengirim sinyal adalah kawan satu tim nyata
-            if (!checkIfSameTeam(senderUid)) return;
-
-            try {
-                let peer = peersRef.current[senderSocketId];
-                if (!peer) {
-                    peer = createPeerConnection(senderSocketId, senderUid);
+        const unsubscribe = onSnapshot(roomRef, (docSnap) => {
+            if (!docSnap.exists()) {
+                if (hasJoinedRoom.current) {
+                    toast.error('Lobby Grup telah dibubarkan oleh Host! 👥❌', { id: 'grp_dissolve' });
+                    closeVoiceChat();
+                    setLobbyData(null);
+                    setViewMode('menu');
+                    hasJoinedRoom.current = false;
+                    navigate('/contest/group');
                 }
+                return;
+            }
 
-                if (signalData.sdp) {
-                    await peer.setRemoteDescription(new RTCSessionDescription(signalData.sdp));
-                    if (signalData.sdp.type === 'offer') {
-                        const answer = await peer.createAnswer();
-                        await peer.setLocalDescription(answer);
-                        socket.emit('webrtc_signal', {
-                            targetSocketId: senderSocketId,
-                            signalData: { sdp: peer.localDescription },
-                            senderUid: currentUser.uid
-                        });
+            const data = docSnap.data();
+            setLobbyData(data); 
+            setViewMode('inside'); 
+            hasJoinedRoom.current = true;
+        }, (error) => {
+            console.error("Firestore UI Listener Error:", error);
+        });
+
+        return () => unsubscribe();
+    }, [roomId, currentUser, navigate]);
+
+    // ==================== 🔊 LISTENER 2: HANDSHAKE SIGNALLING WEBRTC ====================
+    useEffect(() => {
+        if (!roomId || !currentUser || !isSpeakerOn) return;
+
+        const signalsQuery = collection(db, 'lobbyGroups', roomId.toUpperCase(), 'signals');
+
+        const unsubscribeSignals = onSnapshot(signalsQuery, (snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                if (change.type === 'added' || change.type === 'modified') {
+                    const sigData = change.doc.data();
+                    if (sigData.targetUid !== currentUser.uid || sigData.senderUid === currentUser.uid) return;
+
+                    const senderUid = sigData.senderUid;
+
+                    if (sigData.type === 'offer') {
+                        try {
+                            let peer = peersRef.current[senderUid];
+                            if (!peer) peer = createPeerConnection(senderUid);
+
+                            if (peer.signalingState === "stable") {
+                                await peer.setRemoteDescription(new RTCSessionDescription(sigData.sdp));
+                                const answer = await peer.createAnswer();
+                                await peer.setLocalDescription(answer);
+
+                                const mySignalRef = doc(db, 'lobbyGroups', roomId.toUpperCase(), 'signals', `${currentUser.uid}_ans_to_${senderUid}`);
+                                await setDoc(mySignalRef, {
+                                    targetUid: senderUid,
+                                    senderUid: currentUser.uid,
+                                    sdp: peer.localDescription.toJSON(),
+                                    type: 'answer',
+                                    timestamp: Date.now()
+                                });
+                            }
+                        } catch (err) {
+                            console.error("Gagal handshaking Offer:", err);
+                        }
                     }
-                } else if (signalData.candidate) {
-                    await peer.addIceCandidate(new RTCIceCandidate(signalData.candidate));
+
+                    if (sigData.type === 'answer') {
+                        try {
+                            const peer = peersRef.current[senderUid];
+                            if (peer && peer.signalingState === "have-local-offer") {
+                                await peer.setRemoteDescription(new RTCSessionDescription(sigData.sdp));
+                            }
+                        } catch (err) {
+                            console.error("Gagal handshaking Answer:", err);
+                        }
+                    }
+
+                    if (sigData.type === 'candidate') {
+                        try {
+                            const peer = peersRef.current[senderUid];
+                            if (peer && peer.remoteDescription && peer.remoteDescription.type) {
+                                await peer.addIceCandidate(new RTCIceCandidate(sigData.candidate));
+                            }
+                        } catch (e) {
+                            // Abaikan delay kecil
+                        }
+                    }
                 }
-            } catch (err) {
-                console.error("Gagal memproses sinyal audio WebRTC: ", err);
-            }
+            });
         });
 
-        return () => {
-            socket.off('group_room_created');
-            socket.off('group_room_updated');
-            socket.off('group_join_error');
-            socket.off('group_action_error');
-            socket.off('group_room_dissolved');
-            socket.off('webrtc_signal_received');
-        };
-    }, [navigate, isSpeakerOn, lobbyData]);
+        return () => unsubscribeSignals();
+    }, [roomId, currentUser, isSpeakerOn]);
 
-    // Sinkronisasi Deep Link
+    // Sinkronisasi Otomatis URL Deep Link
     useEffect(() => {
-        if (roomId && currentUser) {
-            setViewMode('inside');
-            if (!hasRequestedStatus.current) {
-                socket.emit('join_group_room', { 
-                    roomId: roomId.trim().toUpperCase(), 
-                    uid: currentUser.uid,
-                    name: currentUser.displayName || 'Anggota Grup',
-                    photoURL: currentUser.photoURL || ''
-                });
-                hasRequestedStatus.current = true;
-            }
+        if (roomId && currentUser && !hasJoinedRoom.current) {
+            executeJoinRoomAction(roomId.trim().toUpperCase());
         }
     }, [roomId, currentUser]);
-
-    // Mengabarkan perubahan Mic/Speaker ke Server agar icon profile berubah dinamis
+    
+    // SINKRONISASI TOMBOL MIC
     useEffect(() => {
-        if (roomId && currentUser && lobbyData) {
-            socket.emit('update_voice_status', {
-                roomId: roomId.toUpperCase(),
-                uid: currentUser.uid,
-                isMicOn,
-                isSpeakerOn
-            });
+        if (localStreamRef.current && localStreamRef.current.getAudioTracks().length > 0) {
+            localStreamRef.current.getAudioTracks()[0].enabled = isMicOn;
         }
-    }, [isMicOn, isSpeakerOn, roomId, currentUser]);
+    }, [isMicOn]);
 
-    // Helper: Validasi apakah user target satu kubu dengan kita
-    const checkIfSameTeam = (targetUid) => {
-        if (!lobbyData) return false;
-        if (lobbyData.gameMode === 'study') {
-            return lobbyData.members.some(m => m.uid === currentUser.uid) && lobbyData.members.some(m => m.uid === targetUid);
-        } else {
-            const inTeamA = lobbyData.teamA.some(m => m.uid === currentUser.uid) && lobbyData.teamA.some(m => m.uid === targetUid);
-            const inTeamB = lobbyData.teamB.some(m => m.uid === currentUser.uid) && lobbyData.teamB.some(m => m.uid === targetUid);
-            return inTeamA || inTeamB;
+    // Sinkronisasi status mic/speaker ke Firestore
+    const syncVoiceStatusToFirestore = async (newMic, newSpeaker) => {
+        if (!roomId || !currentUser) return;
+        const roomRef = doc(db, 'lobbyGroups', roomId.toUpperCase());
+
+        try {
+            const freshDoc = await getDoc(roomRef);
+            if (!freshDoc.exists()) return;
+            const currentData = freshDoc.data();
+
+            if (currentData.gameMode === 'study') {
+                const updatedMembers = currentData.members.map(m => 
+                    m.uid === currentUser.uid ? { ...m, isMicOn: newMic, isSpeakerOn: newSpeaker } : m
+                );
+                await updateDoc(roomRef, { members: updatedMembers });
+            } else {
+                const updatedTeamA = currentData.teamA.map(m => 
+                    m.uid === currentUser.uid ? { ...m, isMicOn: newMic, isSpeakerOn: newSpeaker } : m
+                );
+                const updatedTeamB = currentData.teamB.map(m => 
+                    m.uid === currentUser.uid ? { ...m, isMicOn: newMic, isSpeakerOn: newSpeaker } : m
+                );
+                await updateDoc(roomRef, { teamA: updatedTeamA, teamB: updatedTeamB });
+            }
+        } catch (err) {
+            console.error("Gagal sinkronisasi status voice ke Firestore:", err);
         }
     };
 
-    // ==================== LOGIKA CORE VOICE CHATENGINE (WEBRTC) ====================
-    
-    // Inisiasi koneksi ke teman satu tim yang ada di lobby
+    // ==================== 🔊 ENGINE WEBRTC ====================
     const connectToTeamVoice = async () => {
+        if (!lobbyData) return;
         try {
-            // Ambil izin Mic HP
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
             localStreamRef.current = stream;
-            
-            // Default awal: Mic di-mute sampai tombol mic dinyalakan sengaja
-            stream.getAudioTracks()[0].enabled = isMicOn;
+            stream.getAudioTracks()[0].enabled = isMicOn; 
 
-            // Dapatkan daftar kawan satu tim
             let teammates = [];
             if (lobbyData.gameMode === 'study') {
                 teammates = lobbyData.members.filter(m => m.uid !== currentUser.uid);
@@ -193,180 +213,336 @@ const LobbyGroupPage = () => {
                     : lobbyData.teamB.filter(m => m.uid !== currentUser.uid);
             }
 
-            // Buat jalur koneksi ke tiap kawan satu tim
-            teammates.forEach(async (member) => {
-                if (member.socketId) {
-                    const peer = createPeerConnection(member.socketId, member.uid);
-                    const offer = await peer.createOffer();
-                    await peer.setLocalDescription(offer);
-                    
-                    socket.emit('webrtc_signal', {
-                        targetSocketId: member.socketId,
-                        signalData: { sdp: peer.localDescription },
-                        senderUid: currentUser.uid
-                    });
-                }
-            });
+            for (const member of teammates) {
+                const peer = createPeerConnection(member.uid);
+                const offer = await peer.createOffer();
+                await peer.setLocalDescription(offer);
+                
+                const mySignalRef = doc(db, 'lobbyGroups', roomId.toUpperCase(), 'signals', `${currentUser.uid}_to_${member.uid}_offer`);
+                await setDoc(mySignalRef, {
+                    targetUid: member.uid,
+                    senderUid: currentUser.uid,
+                    sdp: peer.localDescription.toJSON(),
+                    type: 'offer',
+                    timestamp: Date.now()
+                });
+            }
         } catch (err) {
-            console.error("Gagal mengakses Mikrofon perangkat:", err);
-            toast.error("Gagal mengaktifkan Voice! Pastikan izin mic diberikan.");
+            console.error("Gagal mengakses Mikrofon:", err);
+            toast.error("Gagal mengaktifkan Voice! Periksa izin mic.");
             setIsSpeakerOn(false);
             setIsMicOn(false);
         }
     };
 
-    const createPeerConnection = (targetSocketId, targetUid) => {
+    const createPeerConnection = (targetUid) => {
         const pc = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] // STUN Server Google gratisan
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
         });
 
-        peersRef.current[targetSocketId] = pc;
-
-        // Tempelkan aliran suara lokal kita ke koneksi teman
         if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current));
+            localStreamRef.current.getTracks().forEach(track => {
+                pc.addTrack(track, localStreamRef.current);
+            });
         }
 
-        // Tangkap kandidat jaringan koneksi
-        pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                socket.emit('webrtc_signal', {
-                    targetSocketId: targetSocketId,
-                    signalData: { candidate: event.candidate },
-                    senderUid: currentUser.uid
+        peersRef.current[targetUid] = pc;
+
+        pc.onicecandidate = async (event) => {
+            if (event.candidate && roomId) {
+                const candRef = doc(db, 'lobbyGroups', roomId.toUpperCase(), 'signals', `${currentUser.uid}_cand_${Date.now()}`);
+                await setDoc(candRef, {
+                    targetUid: targetUid,
+                    senderUid: currentUser.uid,
+                    candidate: event.candidate.toJSON(),
+                    type: 'candidate'
                 });
             }
         };
 
-        // KETIKA SUARA TEMAN MASUK -> Mainkan langsung di speaker HP
         pc.ontrack = (event) => {
-            const remoteAudio = document.createElement('audio');
+            let remoteAudio = document.querySelector(`.remote-audio-${targetUid}`);
+            if (!remoteAudio) {
+                remoteAudio = document.createElement('audio');
+                remoteAudio.className = `remote-audio-${targetUid}`;
+                remoteAudio.setAttribute('playsinline', 'true');
+                document.body.appendChild(remoteAudio);
+            }
             remoteAudio.srcObject = event.streams[0];
             remoteAudio.autoplay = true;
-            remoteAudio.className = `remote-audio-${targetUid}`;
-            document.body.appendChild(remoteAudio);
+            remoteAudio.play().catch(e => console.log("Autoplay blocked:", e));
         };
 
         return pc;
     };
 
-    const closeVoiceChat = () => {
+    const closeVoiceChat = async () => {
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(track => track.stop());
             localStreamRef.current = null;
         }
         Object.keys(peersRef.current).forEach(id => {
-            peersRef.current[id].close();
+            if (peersRef.current[id]) peersRef.current[id].close();
         });
         peersRef.current = {};
-        // Bersihkan objek tag audio teman yang tersisa di dom
-        const audios = document.querySelectorAll('audio[className^="remote-audio-"]');
+        const audios = document.querySelectorAll('audio[class^="remote-audio-"]');
         audios.forEach(a => a.remove());
     };
 
-    // TOGLE SPEAKER TRIGGER
     const toggleSpeaker = () => {
-        if (isSpeakerOn) {
-            // Matikan total sistem voice chat
-            setIsSpeakerOn(false);
+        const nextState = !isSpeakerOn;
+        setIsSpeakerOn(nextState);
+        if (!nextState) {
             setIsMicOn(false);
             closeVoiceChat();
+            syncVoiceStatusToFirestore(false, false);
             toast.error('Voice Chat dinonaktifkan 🔇');
         } else {
-            // Aktifkan Speaker (Bisa dengar kawan dulu)
-            setIsSpeakerOn(true);
             toast.success('Speaker Aktif! Mendengarkan obrolan tim... 🔊');
+            syncVoiceStatusToFirestore(isMicOn, true);
             setTimeout(() => connectToTeamVoice(), 300);
         }
     };
 
-    // TOGLE MIC TRIGGER (TERINTEGRASI ATURAN KHUSUS KAMU)
     const toggleMic = () => {
         if (!isSpeakerOn) {
-            // NOTIFIKASI KHUSUS JIKA SPEAKER BELUM NYALA
             return toast('Nyalakan speaker terlebih dahulu sebelum mengaktifkan mikrofon! 📢', {
                 icon: '⚠️',
                 style: { background: '#fffbeb', color: '#b45309', fontWeight: 'bold', border: '1px solid #fef3c7' }
             });
         }
 
-        if (isMicOn) {
-            setIsMicOn(false);
-            if (localStreamRef.current) localStreamRef.current.getAudioTracks()[0].enabled = false;
-            toast.error('Mikrofon kamu di-mute 🎙️❌');
-        } else {
-            setIsMicOn(true);
-            if (localStreamRef.current) localStreamRef.current.getAudioTracks()[0].enabled = true;
+        const nextMicState = !isMicOn;
+        setIsMicOn(nextMicState);
+        syncVoiceStatusToFirestore(nextMicState, isSpeakerOn);
+
+        if (nextMicState) {
             toast.success('Kamu sedang berbicara! On Mic 🎙️🟢');
+        } else {
+            toast.error('Mikrofon kamu di-mute 🎙️❌');
         }
     };
 
-    // Perubahan Manajemen Keluar Sesi
-    const handleConfirmActualExit = () => {
-        setShowExitModal(false);
-        closeVoiceChat();
-        if (roomId && currentUser) {
-            socket.emit('leave_group_room', { roomId: roomId.toUpperCase(), uid: currentUser.uid });
-        }
-        setLobbyData(null);
-        setViewMode('menu');
-        navigate('/contest/group');
-    };
-
-    // Pembuatan Room & Join Code biasa
-    const handleCreateGroupRoom = () => {
+    // ==================== FIRESTORE CRUD ACTIONS ====================
+    
+    const handleCreateGroupRoom = async () => {
         if (!currentUser) return toast.error('Silakan login terlebih dahulu!');
-        socket.emit('create_group_room', {
-            uid: currentUser.uid, name: currentUser.displayName || 'Host Grup', photoURL: currentUser.photoURL || '',
-            subject: selectedSubject, maxMembers, gameMode, matchType
-        });
+        setIsLoading(true);
+        
+        // ✨ MODIFIKASI: Mengunci format depan agar selalu "GRP" + 3 digit karakter acak
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let generatedRoomId = 'GRP';
+        for (let i = 0; i < 3; i++) {
+            generatedRoomId += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+
+        const roomRef = doc(db, 'lobbyGroups', generatedRoomId);
+
+        const newUserData = {
+            uid: currentUser.uid,
+            name: currentUser.displayName || 'Host',
+            photoURL: currentUser.photoURL || '',
+            activeBorder: currentUser.activeBorder || 'borderNormal', // Ambil border toko
+            isMicOn: false,
+            isSpeakerOn: false,
+            joinedAt: Date.now()
+        };
+
+        const initialPayload = {
+            roomId: generatedRoomId,
+            subject: selectedSubject,
+            maxMembers,
+            gameMode,
+            matchType,
+            createdAt: Date.now(),
+            members: gameMode === 'study' ? [newUserData] : [],
+            teamA: gameMode === 'competition' ? [newUserData] : [],
+            teamB: []
+        };
+
+        try {
+            await setDoc(roomRef, initialPayload);
+            toast.success('Lobby Grup Berhasil Dibuat! 👥');
+            navigate(`/contest/group/lobby/${generatedRoomId}`);
+        } catch (err) {
+            console.error(err);
+            toast.error('Gagal membuat ruangan grup.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const executeJoinRoomAction = async (targetCode) => {
+        setIsLoading(true);
+        const roomRef = doc(db, 'lobbyGroups', targetCode);
+        
+        try {
+            const docSnap = await getDoc(roomRef);
+
+            if (!docSnap.exists()) {
+                toast.error('Kamar grup tidak ditemukan! Pastikan kodenya benar. 🔍❌');
+                setViewMode('menu');
+                navigate('/contest/group');
+                setIsLoading(false);
+                return;
+            }
+
+            const data = docSnap.data();
+            
+            let cleanMembers = (data.members || []).filter(m => m.uid !== currentUser.uid);
+            let cleanTeamA = (data.teamA || []).filter(m => m.uid !== currentUser.uid);
+            let cleanTeamB = (data.teamB || []).filter(m => m.uid !== currentUser.uid);
+
+            const totalNow = data.gameMode === 'study' ? cleanMembers.length : (cleanTeamA.length + cleanTeamB.length);
+
+            if (totalNow >= data.maxMembers) {
+                toast.error('Maaf, kuota tampung ruangan grup ini sudah penuh! 👥⚠️');
+                setViewMode('menu');
+                navigate('/contest/group');
+                setIsLoading(false);
+                return;
+            }
+
+            const memberStructure = {
+                uid: currentUser.uid,
+                name: currentUser.displayName || 'Anggota baru',
+                photoURL: currentUser.photoURL || '',
+                activeBorder: currentUser.activeBorder || 'borderNormal', // Ambil border toko
+                isMicOn: false,
+                isSpeakerOn: false,
+                joinedAt: Date.now()
+            };
+
+            if (data.gameMode === 'study') {
+                cleanMembers.push(memberStructure);
+                await updateDoc(roomRef, { members: cleanMembers });
+            } else {
+                cleanTeamA.push(memberStructure);
+                await updateDoc(roomRef, { teamA: cleanTeamA, teamB: cleanTeamB });
+            }
+        } catch (err) {
+            console.error(err);
+            toast.error('Gagal memproses penggabungan kelompok.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleJoinGroupRoomByCode = () => {
         if (!inputRoomCode.trim()) return toast.error('Ketik kode ruangan dulu!');
         const cleanCode = inputRoomCode.trim().toUpperCase();
-        setViewMode('inside');
         navigate(`/contest/group/lobby/${cleanCode}`);
-        socket.emit('join_group_room', {
-            roomId: cleanCode, uid: currentUser.uid, name: currentUser.displayName || 'Anggota baru', photoURL: currentUser.photoURL || ''
-        });
     };
 
-    const handleSwitchTeam = (targetTeam) => {
-        if (!roomId || !currentUser) return;
-        socket.emit('switch_group_team', { roomId: roomId.toUpperCase(), uid: currentUser.uid, toTeam: targetTeam });
+    const handleSwitchTeam = async (targetTeam) => {
+        if (!roomId || !currentUser || !lobbyData) return;
+        const roomRef = doc(db, 'lobbyGroups', roomId.toUpperCase());
+        
+        const myOldData = [...lobbyData.teamA, ...lobbyData.teamB].find(m => m.uid === currentUser.uid);
+        if (!myOldData) return;
+
+        const updatedUser = { ...myOldData, joinedAt: Date.now() };
+
+        let filteredA = lobbyData.teamA.filter(m => m.uid !== currentUser.uid);
+        let filteredB = lobbyData.teamB.filter(m => m.uid !== currentUser.uid);
+
+        try {
+            if (targetTeam === 'A') {
+                if (lobbyData.teamA.length >= lobbyData.maxMembers) return toast.error('Tim Alfa penuh!');
+                filteredA.push(updatedUser);
+            } else {
+                if (lobbyData.teamB.length >= lobbyData.maxMembers) return toast.error('Tim Beta penuh!');
+                filteredB.push(updatedUser);
+            }
+            await updateDoc(roomRef, { teamA: filteredA, teamB: filteredB });
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleConfirmActualExit = async () => {
+        if (!roomId || !currentUser || !lobbyData) return;
+        setShowExitModal(false);
+        await closeVoiceChat(); 
+
+        const roomRef = doc(db, 'lobbyGroups', roomId.toUpperCase());
+        const isStudyMode = lobbyData.gameMode === 'study';
+        
+        const isHost = isStudyMode 
+            ? lobbyData.members[0]?.uid === currentUser.uid
+            : lobbyData.teamA[0]?.uid === currentUser.uid;
+
+        try {
+            if (isHost) {
+                await deleteDoc(roomRef);
+            } else {
+                if (isStudyMode) {
+                    const filteredMembers = lobbyData.members.filter(m => m.uid !== currentUser.uid);
+                    await updateDoc(roomRef, { members: filteredMembers });
+                } else {
+                    const filteredA = lobbyData.teamA.filter(m => m.uid !== currentUser.uid);
+                    const filteredB = lobbyData.teamB.filter(m => m.uid !== currentUser.uid);
+                    await updateDoc(roomRef, { teamA: filteredA, teamB: filteredB });
+                }
+            }
+        } catch (err) {
+            console.error("Gagal keluar kamar: ", err);
+        }
+
+        setLobbyData(null);
+        setViewMode('menu');
+        navigate('/contest/group');
+    };
+
+    // 🌟 SEPERTI LEADERBOARD: Fungsi klik avatar untuk trigger modal zoom preview
+    const handleAvatarClick = (e, photoUrl, name) => {
+        e.stopPropagation();
+        const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=2563eb&color=ffffff&bold=true`;
+        setSelectedAvatar({ url: photoUrl || fallbackUrl, name });
     };
 
     const currentSubject = subjectsList.find(s => s.id === (lobbyData?.subject || selectedSubject));
 
-    // ==================== RENDERING SUB-ELEMENT AVATAR MEMBER DENGAN MIC ICON ====================
-    const renderMemberAvatar = (user, index, isHostMode = false) => {
-        // Tentukan kondisi icon berdasarkan status real-time dari server
+    // ==================== 🛠️ RENDERING AVATAR DENGAN KONDISI GLOW VOICE + BORDER TOKO ====================
+    const renderMemberAvatar = (user, index, isHostMode = false, baseFrameClass) => {
         let voiceIcon = null;
-        let indicatorClass = '';
+        let voiceIndicatorClass = '';
+
+        // 🟢 ATURAN PRIORITAS BORDER:
+        // Jika sedang On-Mic atau dengar suara, pakai border voice. Jika diam, pakai border dari toko (activeBorder)
+        let finalBorderClass = user?.activeBorder || 'borderNormal';
 
         if (user.isSpeakerOn && user.isMicOn) {
-            // Kondisi 1: Dua-duanya nyala -> Tampilkan Mic Hijau
             voiceIcon = <FaMicrophone />;
-            indicatorClass = `${styles.miniVoiceProfileIndicator} ${styles.voiceActiveGreen}`;
+            voiceIndicatorClass = `${styles.miniVoiceProfileIndicator} ${styles.voiceActiveGreen}`;
+            finalBorderClass = styles.borderActiveGreen; // Override ke hijau menyala
         } else if (user.isSpeakerOn && !user.isMicOn) {
-            // Kondisi 2: Hanya Speaker nyala -> Tampilkan Speaker Biru
             voiceIcon = <FaVolumeHigh />;
-            indicatorClass = `${styles.miniVoiceProfileIndicator} ${styles.voiceSpeakerOnlyBlue}`;
+            voiceIndicatorClass = `${styles.miniVoiceProfileIndicator} ${styles.voiceSpeakerOnlyBlue}`;
+            finalBorderClass = styles.borderSpeakerOnlyBlue; // Override ke biru menyala
         }
-        // Kondisi 3: Dua-duanya mati -> voiceIcon tetap null (Icon tidak akan dirender/hilang)
+
+        const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=2563eb&color=ffffff&bold=true`;
 
         return (
-            <div className={styles.avatarLeftArea}>
-                {user.photoURL ? (
-                    <img src={user.photoURL} alt="Ava" className={styles.avatarMainImage} />
-                ) : (
-                    <div className={styles.initialAva}>{user.name.charAt(0)}</div>
-                )}
-                
-                {/* ICON HANYA MUNCUL JIKA KONDISI 1 ATAU 2 TERPENUHI */}
+            <div className={styles.avatarContainerPositionRef}>
+                {/* Frame Div menggunakan gabungan class CSS Module & file border.css toko */}
+                <div 
+                    className={`${baseFrameClass} ${finalBorderClass}`} 
+                    onClick={(e) => handleAvatarClick(e, user?.photoURL, user?.name)}
+                >
+                    <img 
+                        src={user?.photoURL || fallbackUrl} 
+                        alt={user?.name || 'Avatar'} 
+                    />
+                </div>
+
+                {/* Indikator Icon Mic / Speaker melayang kecil */}
                 {voiceIcon && (
-                    <span className={indicatorClass}>
+                    <span className={voiceIndicatorClass}>
                         {voiceIcon}
                     </span>
                 )}
@@ -376,7 +552,7 @@ const LobbyGroupPage = () => {
         );
     };
 
-    // ==================== RENDER LAYOUT INSIDE LOBBY ====================
+    // LAYOUT 1: DI DALAM RUANG LOBBY
     if (viewMode === 'inside') {
         const isStudyMode = lobbyData?.gameMode === 'study';
         const isHost = isStudyMode 
@@ -392,7 +568,6 @@ const LobbyGroupPage = () => {
                     <h2>Ruang Mabar Grup</h2>
                 </div>
 
-                {/* DUA TOMBOL VOICE CONTROLS PANEL (SPEAKER & MIC) */}
                 <div className={styles.voiceChatControlActionRow}>
                     <button 
                         className={`${styles.voiceControlBtn} ${isSpeakerOn ? styles.btnActiveSpeaker : styles.btnInactive}`}
@@ -443,7 +618,7 @@ const LobbyGroupPage = () => {
                         <div className={styles.casualMembersGrid}>
                             {lobbyData?.members?.map((user, index) => (
                                 <div key={user.uid} className={styles.memberAvatarCardRow}>
-                                    {renderMemberAvatar(user, index, true)}
+                                    {renderMemberAvatar(user, index, true, styles.lobbyMainAvatarFrame)}
                                     <div className={styles.memberIdentityCenter}>
                                         <h4>{user.name}</h4>
                                         <p>{index === 0 ? 'Pemimpin Kelompok' : 'Anggota Tim'}</p>
@@ -466,7 +641,7 @@ const LobbyGroupPage = () => {
                             <div className={styles.teamSlotsVerticalList}>
                                 {lobbyData?.teamA?.map((user, idx) => (
                                     <div key={user.uid} className={styles.compactUserCardItem}>
-                                        {renderMemberAvatar(user, idx, false)}
+                                        {renderMemberAvatar(user, idx, false, styles.lobbyListAvatarFrame)}
                                         <h4>{user.name} {idx === 0 && <strong style={{color:'#2563eb'}}>(Host)</strong>}</h4>
                                     </div>
                                 ))}
@@ -502,7 +677,7 @@ const LobbyGroupPage = () => {
                                     <>
                                         {lobbyData?.teamB?.map((user) => (
                                             <div key={user.uid} className={styles.compactUserCardItem}>
-                                                {renderMemberAvatar(user, 0, false)}
+                                                {renderMemberAvatar(user, 0, false, styles.lobbyListAvatarFrame)}
                                                 <h4>{user.name}</h4>
                                             </div>
                                         ))}
@@ -529,6 +704,19 @@ const LobbyGroupPage = () => {
                     )}
                 </div>
 
+                {/* 🔒 SEPERTI LEADERBOARD: MODAL POP-UP PREVIEW AVATAR KETIKA DIKLIK */}
+                {selectedAvatar && (
+                    <div className={styles.modalOverlay} onClick={() => setSelectedAvatar(null)}>
+                        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                            <button className={styles.modalCloseBtn} onClick={() => setSelectedAvatar(null)}>
+                                <FaXmark />
+                            </button>
+                            <img src={selectedAvatar.url} alt={selectedAvatar.name} className={styles.modalImageImg} />
+                            <h3 className={styles.modalImageTitle}>{selectedAvatar.name}</h3>
+                        </div>
+                    </div>
+                )}
+
                 {showExitModal && (
                     <div className={styles.overlayModalContainer}>
                         <div className={styles.exitModalBodyCard}>
@@ -545,11 +733,11 @@ const LobbyGroupPage = () => {
         );
     }
 
-    // Panel Utama Pemilihan (Form Pembuatan) - Tidak Berubah dari sebelumnya
+    // LAYOUT 2: MENU UTAMA SEBELUM MASUK ROOM
     return (
         <div className={styles.groupLobbyMainContainer}>
             <div className={styles.headerTopArea}>
-                <button className={styles.circularBackControlBtn} onClick={() => navigate('/dashboard')}>
+                <button className={styles.circularBackControlBtn} onClick={() => navigate('/dashboard')} disabled={isLoading}>
                     <FaArrowLeft />
                 </button>
                 <h2>Lobby Belajar Kelompok & Regu</h2>
@@ -564,24 +752,24 @@ const LobbyGroupPage = () => {
 
                     <div className={styles.formElementFieldGroup}>
                         <label>1. Pilih Kategori Pelajaran:</label>
-                        <select className={styles.classicModernSelectStyle} value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)}>
+                        <select className={styles.classicModernSelectStyle} value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)} disabled={isLoading}>
                             {subjectsList.map(s => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
                         </select>
                     </div>
 
                     <div className={styles.formElementFieldGroup}>
                         <label>2. Batas Anggota Per Regu ({maxMembers} Orang):</label>
-                        <input className={styles.classicRangeSliderStyle} type="range" min="2" max="5" value={maxMembers} onChange={(e) => setMaxMembers(parseInt(e.target.value))} />
+                        <input className={styles.classicRangeSliderStyle} type="range" min="2" max="5" value={maxMembers} onChange={(e) => setMaxMembers(parseInt(e.target.value))} disabled={isLoading} />
                     </div>
 
                     <div className={styles.formElementFieldGroup}>
                         <label>3. Tentukan Mode Kelompok:</label>
                         <div className={styles.customRadioDualFlexGrid}>
-                            <div className={`${styles.radioSelectionOptionBox} ${gameMode === 'study' ? styles.boxSelectedActiveBlue : ''}`} onClick={() => setGameMode('study')}>
+                            <div className={`${styles.radioSelectionOptionBox} ${gameMode === 'study' ? styles.boxSelectedActiveBlue : ''} ${isLoading ? styles.disabledBox : ''}`} onClick={() => !isLoading && setGameMode('study')}>
                                 <FaBookOpen />
                                 <div><h4>Belajar Bareng</h4><p>Baca materi kelompok & mini kuis.</p></div>
                             </div>
-                            <div className={`${styles.radioSelectionOptionBox} ${gameMode === 'competition' ? styles.boxSelectedActivePurple : ''}`} onClick={() => setGameMode('competition')}>
+                            <div className={`${styles.radioSelectionOptionBox} ${gameMode === 'competition' ? styles.boxSelectedActivePurple : ''} ${isLoading ? styles.disabledBox : ''}`} onClick={() => !isLoading && setGameMode('competition')}>
                                 <FaShieldHalved />
                                 <div><h4>Kompetisi Regu</h4><p>Adu tangkas kuis antar tim.</p></div>
                             </div>
@@ -592,11 +780,11 @@ const LobbyGroupPage = () => {
                         <div className={styles.formElementFieldGroup}>
                             <label><FaGear /> Pengaturan Pencarian Musuh:</label>
                             <div className={styles.customRadioDualFlexGrid}>
-                                <div className={`${styles.radioSelectionOptionBox} ${matchType === 'custom' ? styles.boxSelectedActivePurple : ''}`} onClick={() => setMatchType('custom')}>
+                                <div className={`${styles.radioSelectionOptionBox} ${matchType === 'custom' ? styles.boxSelectedActivePurple : ''} ${isLoading ? styles.disabledBox : ''}`} onClick={() => !isLoading && setMatchType('custom')}>
                                     <FaUsers />
                                     <div><h4>Custom Match</h4><p>Musuh masuk lewat 1 kode room.</p></div>
                                 </div>
-                                <div className={`${styles.radioSelectionOptionBox} ${matchType === 'random' ? styles.boxSelectedActiveBlue : ''}`} onClick={() => setMatchType('random')}>
+                                <div className={`${styles.radioSelectionOptionBox} ${matchType === 'random' ? styles.boxSelectedActiveBlue : ''} ${isLoading ? styles.disabledBox : ''}`} onClick={() => !isLoading && setMatchType('random')}>
                                     <FaShuffle />
                                     <div><h4>Random Match</h4><p>Otomatis cari lawan dari luar acak.</p></div>
                                 </div>
@@ -604,8 +792,8 @@ const LobbyGroupPage = () => {
                         </div>
                     )}
 
-                    <button className={styles.primaryTriggerExecutionBtn} onClick={handleCreateGroupRoom}>
-                        🚀 Buat Ruangan Grup Sekarang
+                    <button className={styles.primaryTriggerExecutionBtn} onClick={handleCreateGroupRoom} disabled={isLoading}>
+                        {isLoading ? <><FaSpinner className={styles.spinningIconElement} /> Membuat Sesi...</> : '🚀 Buat Ruangan Grup Sekarang'}
                     </button>
                 </div>
 
@@ -617,11 +805,20 @@ const LobbyGroupPage = () => {
                     
                     <div className={styles.formElementFieldGroup}>
                         <label>Masukkan Kode Unik Grup:</label>
-                        <input className={styles.modernTextInputBoxStyle} type="text" placeholder="Contoh: GRPX92" maxLength={6} value={inputRoomCode} onChange={(e) => setInputRoomCode(e.target.value)} />
+                        {/* ✨ MODIFIKASI: Menambahkan e.target.value.toUpperCase() agar otomatis huruf besar saat diketik */}
+                        <input 
+                            className={styles.modernTextInputBoxStyle} 
+                            type="text" 
+                            placeholder="Contoh: GRPX92" 
+                            maxLength={6} 
+                            value={inputRoomCode} 
+                            onChange={(e) => setInputRoomCode(e.target.value.toUpperCase())} 
+                            disabled={isLoading} 
+                        />
                     </div>
 
-                    <button className={styles.primaryTriggerExecutionBtn} style={{backgroundColor:'#10b981'}} onClick={handleJoinGroupRoomByCode}>
-                        <FaRightToBracket /> Bergabung Sekarang
+                    <button className={styles.primaryTriggerExecutionBtn} style={{backgroundColor:'#10b981'}} onClick={handleJoinGroupRoomByCode} disabled={isLoading}>
+                        {isLoading ? <><FaSpinner className={styles.spinningIconElement} /> Membuka Pintu...</> : <><FaRightToBracket /> Bergabung Sekarang</>}
                     </button>
                 </div>
             </div>

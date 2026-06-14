@@ -2,7 +2,6 @@ import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { GDPRProvider } from './contexts/GDPRContext.jsx';
-import { SocketProvider } from './contexts/SocketContext';
 import App from './App.jsx';
 import Spinner from './components/ui/Spinner';
 import MainLayout from './components/ui/MainLayout';
@@ -37,9 +36,7 @@ const MateriSubjectPage = lazy(() => import('./pages/admin/MateriSubjectPage'));
 const Root = () => (
   <AuthProvider>
     <GDPRProvider>
-      <SocketProvider>
       <App />
-      </SocketProvider>
     </GDPRProvider>
   </AuthProvider>
 );
