@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "install-all": "npm install && npm install --prefix client && npm install --prefix server",
-    "b-d": "npm run build --prefix client && firebase deploy"
+    "b-d": "npm run build --prefix client && firebase deploy --only hosting"
   },
   "dependencies": {
     "firebase": "^10.0.0",
