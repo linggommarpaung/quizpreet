@@ -1,0 +1,133 @@
+/* ==========================================================================
+   🟢 1. TIER BIASA (STANDARD BORDER - STATIS)
+   ========================================================================== */
+
+/* Border Default bawaan aplikasi */
+.borderNormal {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid #cbd5e1; /* Warna abu-abu slate muda */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Border Bronze Klasik */
+.borderClassic {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid #cd7f32; /* Warna perunggu asli */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* ==========================================================================
+   🔵 2. TIER LANGKA (RARE BORDER - EFFECTS & PULSE GLOW)
+   ========================================================================== */
+
+/* Border Aura Ungu Berdenyut (Shadow Pulse) */
+.borderGlowPulse {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid #a855f7; /* Warna ungu utama */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rarePurplePulse 2s infinite ease-in-out;
+}
+
+/* Border Cyan Neon Cyberpunk */
+.borderCyanGlow {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid #06b6d4; /* Warna cyan neon */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: rareCyanPulse 1.8s infinite ease-in-out;
+}
+
+/* Logika Animasi Denyut Cahaya (Glow) */
+@keyframes rarePurplePulse {
+  0% { box-shadow: 0 0 4px #a855f7, inset 0 0 2px #a855f7; }
+  50% { box-shadow: 0 0 16px #c084fc, inset 0 0 8px #c084fc; }
+  100% { box-shadow: 0 0 4px #a855f7, inset 0 0 2px #a855f7; }
+}
+
+@keyframes rareCyanPulse {
+  0% { box-shadow: 0 0 4px #06b6d4, inset 0 0 2px #06b6d4; }
+  50% { box-shadow: 0 0 16px #22d3ee, inset 0 0 8px #22d3ee; }
+  100% { box-shadow: 0 0 4px #06b6d4, inset 0 0 2px #06b6d4; }
+}
+
+
+/* ==========================================================================
+   🔴 3. TIER EPIK (LEGENDARY BORDER - ANIMASI GRADASI BERPUTAR)
+   ========================================================================== */
+
+/* Border RGB Pelangi Berputar (RGB Cyberpunk) */
+.borderRainbowRotate {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  position: relative;
+  padding: 4px; /* Tebal border dikontrol lewat padding */
+  background: conic-gradient(#ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: epicSpin 3s linear infinite;
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
+}
+
+/* Border Kobaran Api Magma (Magma Flare) */
+.borderFireMotion {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  position: relative;
+  padding: 4px;
+  background: conic-gradient(#ea580c, #f97316, #facc15, #ef4444, #ea580c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: epicSpin 1.5s linear infinite; /* Putaran lebih cepat biar dapet efek bara api */
+  box-shadow: 0 0 14px rgba(234, 88, 12, 0.5);
+}
+
+/* Masking Internal: Menjaga foto profil di dalam tetap bundar dan menutup background gradient di tengah */
+.borderRainbowRotate img,
+.borderFireMotion img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: var(--card-bg, #ffffff); /* Menutupi gradient bocor di belakang foto */
+  border: 2px solid var(--card-bg, #ffffff); /* Pembatas antara foto dan efek putar */
+  animation: counterEpicSpin 3s linear infinite; /* Memutar balik gambar agar posisi foto profil tidak ikut pusing berputar */
+}
+
+/* Khusus animasi putaran Magma Flare agar fotonya juga stabil */
+.borderFireMotion img {
+  animation: counterEpicSpin 1.5s linear infinite;
+}
+
+/* Logika Animasi Putaran Putar */
+@keyframes epicSpin {
+  100% { transform: rotate(360deg); }
+}
+
+/* Logika Memutar Balik Gambar (Anti-Pusing) */
+@keyframes counterEpicSpin {
+  100% { transform: rotate(-360deg); }
+}

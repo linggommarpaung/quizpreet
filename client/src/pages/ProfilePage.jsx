@@ -3,20 +3,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { db } from '../config/firebaseConfig';
+import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import styles from './ProfilePage.module.css';
 import { toast } from 'react-hot-toast';
-import { FaPencil, FaShieldHalved, FaRotate, FaArrowsLeftRight, FaCheck, FaXmark, FaTrashCan } from 'react-icons/fa6';
+import { FaPencil, FaShieldHalved, FaRotate, FaArrowsLeftRight, FaCheck, FaXmark, FaTrashCan, FaStore } from 'react-icons/fa6';
+import '../components/border.css'; 
+import Spinner from '../components/ui/Spinner';
 
 const ProfilePage = () => {
   const { currentUser, updateUserProfile, sendPasswordReset, deleteAccount, updateProfilePicture } = useAuth();
   const navigate = useNavigate(); 
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
+  const [activeBorder, setActiveBorder] = useState('borderNormal');
 
   // State Profil Data
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // State Editor Foto (Mobile Touch Optimized)
   const [sourceImage, setSourceImage] = useState(null);
@@ -45,11 +50,41 @@ const ProfilePage = () => {
   const [confirmationEmail, setConfirmationEmail] = useState('');
 
   useEffect(() => {
-    if (currentUser) {
-      setDisplayName(currentUser.displayName || '');
-      setUsername(currentUser.username || (currentUser.email ? currentUser.email.split('@')[0] : ''));
+  // 1. Jika AuthContext memastikan user memang TIDAK masuk/tidak ada sesi, langsung matikan loading
+  if (currentUser === null) {
+    setLoading(false);
+    return;
+  }
+
+  // 2. Jika sesi user ada tapi UID-nya masih proses loading dari Firebase, biarkan dia menunggu dulu
+  if (!currentUser?.uid) return;
+
+  const reloadProfileData = async () => {
+    try {
+      setLoading(true); // Mulai animasi spinner premium
+      
+      // Ambil data segar langsung dari Firestore path users/uid
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      const snapshot = await getDoc(userDocRef);
+
+      if (snapshot.exists()) {
+        const freshData = snapshot.data();
+        // Masukkan data terbaru ke dalam form input lokal
+        setDisplayName(freshData.displayName || '');
+        setUsername(freshData.username || '');
+        setActiveBorder(freshData.activeBorder || 'borderNormal'); 
+      }
+    } catch (error) {
+      console.error("Gagal menyegarkan data profil otomatis:", error);
+    } finally {
+      setTimeout(() => {
+        setLoading(false); 
+      }, 400);
     }
-  }, [currentUser]);
+  };
+
+  reloadProfileData();
+}, [currentUser]); 
 
   // Handler memuat file gambar dari HP
   const handleFileChange = (e) => {
@@ -264,12 +299,23 @@ const ProfilePage = () => {
   };
 
   const userInitial = currentUser?.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'U';
+  
+  if (loading) {
+    return <Spinner />;
+  }
 
   return (
     <>
       <div className={styles.profileContainer}>
         {/* --- PROFILE HEADER --- */}
         <header className={styles.profileHeader}>
+          <button 
+        className={styles.shopRedirectBtn} 
+        onClick={() => navigate('/shop')} 
+        title="Buka Toko"
+      >
+        <FaStore />
+      </button>
           <h1 className={styles.headerTitle}>Profil Saya</h1>
           <p className={styles.headerSub}>Kelola foto profile dan informasi akun</p>
         </header>
@@ -277,15 +323,18 @@ const ProfilePage = () => {
         {/* --- AVATAR LAYOUT --- */}
         <div className={styles.avatarSection}>
           <div className={styles.avatarWrapper} onClick={() => !uploading && fileInputRef.current.click()}>
-            {currentUser?.photoURL ? (
-              <img src={currentUser.photoURL} alt="Avatar" className={styles.profileAvatar} />
-            ) : (
-              <div className={styles.avatarFallback}>{userInitial}</div>
-            )}
-            <div className={styles.editOverlay}>
-              <FaPencil />
-            </div>
-          </div>
+  {/* Bungkus foto profil dengan class border dinamis dari database */}
+  <div className={activeBorder} style={{ width: '100%', height: '100%' }}>
+    <img 
+      src={currentUser?.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"} 
+      alt="Avatar" 
+      className={styles.profileAvatar} 
+    />
+  </div>
+  <div className={styles.editOverlay}>
+    <FaPencil />
+  </div>
+</div>
           <input 
             type="file" 
             ref={fileInputRef} 

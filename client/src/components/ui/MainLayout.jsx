@@ -5,18 +5,16 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import ThemeSwitcher from '../ThemeSwitcher'; 
 import styles from './MainLayout.module.css';
-import { toast } from 'react-hot-toast'; // <-- DIPERBAIKI: Mengimpor toast agar toggleFullscreen tidak crash
+import { toast } from 'react-hot-toast';
 import { 
     FaHouse, 
     FaBookOpen, 
     FaAward, 
-    FaCartShopping, 
     FaUser,
     FaGear, 
     FaRightFromBracket,
     FaShieldHalved,
-    FaCircleQuestion,
-    FaGamepad
+    FaCircleQuestion
 } from 'react-icons/fa6'; 
 
 const MainLayout = ({ children }) => {
@@ -27,8 +25,11 @@ const MainLayout = ({ children }) => {
     const [showLogoutModal, setShowLogoutModal] = useState(false); 
 
     const isAdmin = currentUser?.role === 'admin';
-    
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+
+    // 🛠️ LOGIKA BARU: Cek apakah path saat ini adalah halaman toko
+    // Sesuaikan '/shop' dengan rute path yang kamu daftarkan di App.jsx kamu
+    const isShopPage = location.pathname.includes('shop'); 
 
     useEffect(() => {
         const handleFullscreenChange = () => {
@@ -43,12 +44,8 @@ const MainLayout = ({ children }) => {
         if (!document.fullscreenElement) {
             if (elem.requestFullscreen) {
                 elem.requestFullscreen()
-                    .then(() => toast.success('Mode Game Imersif Aktif! 🎮🚀'))
+                    .then(() => toast.success('Mode Game Imersif Aktif! 🎮✨'))
                     .catch((err) => console.log(`Gagal Fullscreen: ${err.message}`));
-            } else if (elem.webkitRequestFullscreen) { /* Safari */
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) { /* IE11 */
-                elem.msRequestFullscreen();
             }
         } else {
             if (document.exitFullscreen) {
@@ -70,7 +67,6 @@ const MainLayout = ({ children }) => {
             signOut(); 
         } catch (error) {
             console.error("Gagal keluar akun secara sistem:", error);
-            alert("Gagal logout, silakan coba lagi.");
         }
     };
 
@@ -88,7 +84,7 @@ const MainLayout = ({ children }) => {
 
     return (
         <div className={styles.qpDashboardContainer}>
-            {/* --- TOP NAVBAR --- */}
+            {/* --- TOP NAVBAR (Tetap selalu muncul di semua halaman) --- */}
             <header className={styles.topNavbar}>
                 <div className={styles.logoArea} onClick={() => navigate('/dashboard')}>
                     <span className={styles.logoText}>QuizPreet</span>
@@ -130,7 +126,7 @@ const MainLayout = ({ children }) => {
                                     <FaGear /> Edit Profile
                                 </button>
                                 <button className={styles.dropdownActionItemBtn} onClick={toggleFullscreen}>
-                                    <span style={{ fontSize: '0.95rem' }}>{isFullscreen ? '🔲' : '📺'}</span>
+                                    <span>{isFullscreen ? '↩️' : '📺'}</span>
                                     <span>{isFullscreen ? 'Keluar Layar Penuh' : 'Mode Layar Penuh'}</span>
                                 </button>
                                 <div className={styles.dropdownDivider} />
@@ -147,66 +143,70 @@ const MainLayout = ({ children }) => {
             </header>
 
             {/* --- MAIN CONTENT AREA --- */}
-            <main className={styles.mainContent}>
+            {/* 🛠️ MODIFIKASI: Mengurangi padding-bottom kontainer jika sedang membuka halaman toko */}
+            <main className={`${styles.mainContent} ${isShopPage ? styles.shopPageActiveContent : ''}`}>
                 {children}
             </main>
 
             {/* --- FLOATING BOTTOM NAVIGATION BAR --- */}
-            <div className={styles.navContainerFixed}>
-                <footer className={styles.qpBottomNavFloating}>
-                    <button
-                        className={`${styles.qpNavItem} ${activeNav === 'home' ? styles.active : ''}`}
-                        onClick={() => navigate('/dashboard')}
-                        title="Dashboard Utama"
-                    >
-                        <FaHouse className={styles.navIcon} />
-                        <span className={styles.navLabel}>Utama</span>
-                    </button>
-                    
-                    <button
-                        className={`${styles.qpNavItem} ${activeNav === 'forum' ? styles.active : ''}`}
-                        onClick={() => navigate('/forum')}
-                        title="Materi & Forum"
-                    >
-                        <FaBookOpen className={styles.navIcon} />
-                        <span className={styles.navLabel}>Materi</span>
-                    </button>
-                    
-                    <button
-                        className={`${styles.qpNavItem} ${activeNav === 'leaderboard' ? styles.active : ''}`}
-                        onClick={() => navigate('/leaderboard')}
-                        title="Papan Peringkat"
-                    >
-                        <FaAward className={styles.navIcon} />
-                        <span className={styles.navLabel}>Peringkat</span>
-                    </button>
-                    
-                    <button
-                        className={`${styles.qpNavItem} ${activeNav === 'quiz' ? styles.active : ''}`}
-                        onClick={() => navigate('/quiz')}
-                        title="quiz"
-                    >
-                        <FaCircleQuestion className={styles.navIcon} />
-                        <span className={styles.navLabel}>Quiz</span>
-                    </button>
-                    
-                    <button
-                        className={`${styles.qpNavItem} ${activeNav === 'profile' ? styles.active : ''}`}
-                        onClick={() => navigate('/profile')}
-                        title="Profil Saya"
-                    >
-                        <FaUser className={styles.navIcon} />
-                        <span className={styles.navLabel}>Profil</span>
-                    </button>
-                </footer>
-            </div>
+            {/* 🛠️ PERBAIKAN UTAMA: Hanya tampilkan bottom nav jika BUKAN halaman toko (!isShopPage) */}
+            {!isShopPage && (
+                <div className={styles.navContainerFixed}>
+                    <footer className={styles.qpBottomNavFloating}>
+                        <button
+                            className={`${styles.qpNavItem} ${activeNav === 'home' ? styles.active : ''}`}
+                            onClick={() => navigate('/dashboard')}
+                            title="Dashboard Utama"
+                        >
+                            <FaHouse className={styles.navIcon} />
+                            <span className={styles.navLabel}>Utama</span>
+                        </button>
+                        
+                        <button
+                            className={`${styles.qpNavItem} ${activeNav === 'forum' ? styles.active : ''}`}
+                            onClick={() => navigate('/forum')}
+                            title="Materi & Forum"
+                        >
+                            <FaBookOpen className={styles.navIcon} />
+                            <span className={styles.navLabel}>Materi</span>
+                        </button>
+                        
+                        <button
+                            className={`${styles.qpNavItem} ${activeNav === 'leaderboard' ? styles.active : ''}`}
+                            onClick={() => navigate('/leaderboard')}
+                            title="Papan Peringkat"
+                        >
+                            <FaAward className={styles.navIcon} />
+                            <span className={styles.navLabel}>Peringkat</span>
+                        </button>
+                        
+                        <button
+                            className={`${styles.qpNavItem} ${activeNav === 'quiz' ? styles.active : ''}`}
+                            onClick={() => navigate('/quiz')}
+                            title="quiz"
+                        >
+                            <FaCircleQuestion className={styles.navIcon} />
+                            <span className={styles.navLabel}>Quiz</span>
+                        </button>
+                        
+                        <button
+                            className={`${styles.qpNavItem} ${activeNav === 'profile' ? styles.active : ''}`}
+                            onClick={() => navigate('/profile')}
+                            title="Profil Saya"
+                        >
+                            <FaUser className={styles.navIcon} />
+                            <span className={styles.navLabel}>Profil</span>
+                        </button>
+                    </footer>
+                </div>
+            )}
             
             {showLogoutModal && (
                 <div className={styles.logoutModalOverlay} onClick={() => setShowLogoutModal(false)}>
                     <div className={styles.logoutModalContent} onClick={(e) => e.stopPropagation()}>
-                        <div className={styles.logoutWarnIcon}>🚪</div>
+                        <div className={styles.logoutWarnIcon}>⚠️</div>
                         <h3>Mau Keluar Sekarang?</h3>
-                        <p>Kamu harus memasukkan kembali email dan kata sandi pada sesi berikutnya untuk masuk ke dashboard.</p>
+                        <p>Kamu harus memasukkan kembali email dan kata sandi pada sesi berikutnya.</p>
                         <div className={styles.logoutModalActions}>
                             <button className={styles.logoutCancelBtn} onClick={() => setShowLogoutModal(false)}>
                                 Batal

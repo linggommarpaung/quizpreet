@@ -12,7 +12,6 @@ import html2canvas from 'html2canvas';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { useSocket } from '../contexts/SocketContext';
 
 // IMPORT SUB-KOMKOMPONEN UI YANG BARU
 import ChapterList from '../components/ui/ChapterList';
@@ -39,7 +38,6 @@ import {
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 const ForumPage = () => {
-  const { socket, onlineUserIds } = useSocket(); 
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('materi');
   const [fullscreenLevel, setFullscreenLevel] = useState(0);
@@ -73,7 +71,7 @@ const ForumPage = () => {
   const [loadingChapters, setLoadingChapters] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
 
-  // State Manajemen Chat Global Realtime (Dideklarasikan SEKALI di sini)
+  // State Manajemen Chat Global Realtime
   const [chatMessages, setChatMessages] = useState([]);
   const [inputChat, setInputChat] = useState('');
   const chatEndRef = useRef(null);
@@ -83,7 +81,6 @@ const ForumPage = () => {
     return savedCounts ? JSON.parse(savedCounts) : { mtk: 0, ipa: 0, ips: 0, inggris: 0, indonesia: 0 };
   });
 
-
   const subjectsData = [
     { id: 'mtk', name: 'Matematika', icon: <FaCalculator />, totalChapters: subjectCounts.mtk },
     { id: 'ipa', name: 'Ilmu Pengetahuan Alam', icon: <FaFlask />, totalChapters: subjectCounts.ipa },
@@ -91,6 +88,29 @@ const ForumPage = () => {
     { id: 'inggris', name: 'Bahasa Inggris', icon: <FaLanguage />, totalChapters: subjectCounts.inggris },
     { id: 'indonesia', name: 'Bahasa Indonesia', icon: <FaFont />, totalChapters: subjectCounts.indonesia }
   ];
+
+  // =======================================================================
+  // 🟢 GLOBAL PRESENCE FIRESTORE REALTIME (TANPA SOCKET)
+  // =======================================================================
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    const userDocRef = doc(db, 'users', currentUser.uid);
+
+    // Otomatis tandai online ketika masuk halaman forum
+    updateDoc(userDocRef, {
+      isOnline: true,
+      lastActive: serverTimestamp()
+    }).catch((err) => console.error("Gagal update status online global:", err));
+
+    // Cleanup function: Ketika ganti halaman / logout set offline
+    return () => {
+      updateDoc(userDocRef, {
+        isOnline: false,
+        lastActive: serverTimestamp()
+      }).catch((err) => console.error("Gagal update status offline global:", err));
+    };
+  }, [currentUser?.uid]);
 
   // Listen data chat global secara realtime dari Firestore
   useEffect(() => {
@@ -117,33 +137,32 @@ const ForumPage = () => {
 
   // Fungsi Kirim Chat Global ke Firestore
   const handleSendChat = async (e) => {
-  e.preventDefault();
-  if (!inputChat.trim()) return;
+    e.preventDefault();
+    if (!inputChat.trim()) return;
 
-  // Validasi awal di client: Tolak jika user belum login/guest demi keamanan
-  if (!currentUser?.uid) {
-    toast.error("Kamu harus login terlebih dahulu untuk mengirim pesan!");
-    return;
-  }
+    if (!currentUser?.uid) {
+      toast.error("Kamu harus login terlebih dahulu untuk mengirim pesan!");
+      return;
+    }
 
-  try {
-    const msgData = {
-      text: inputChat.trim(),
-      uid: currentUser.uid,                         // Pastikan mengambil UID asli user yang login
-      username: currentUser?.username || 'user',
-      displayName: currentUser?.displayName || 'Siswa',
-      createdAt: serverTimestamp()                   // Menggunakan waktu server, anti-manipulasi waktu lokal HP
-    };
+    try {
+      const msgData = {
+        text: inputChat.trim(),
+        uid: currentUser.uid,                         
+        username: currentUser?.username || 'user',
+        displayName: currentUser?.displayName || 'Siswa',
+        photoURL: currentUser?.photoURL || '',        
+        activeBorder: currentUser?.activeBorder || 'borderNormal', 
+        createdAt: serverTimestamp()                   
+      };
 
-    setInputChat(''); // Reset input secepatnya di UI demi pengalaman pengguna yang responsif
-    
-    // Menggunakan addDoc langsung ke koleksi agar otomatis generate ID dokumen yang acak dan unik
-    await addDoc(collection(db, 'global_chats'), msgData);
-  } catch (err) {
-    console.error("Error sending chat:", err);
-    toast.error("Gagal mengirim pesan");
-  }
-};
+      setInputChat(''); 
+      await addDoc(collection(db, 'global_chats'), msgData);
+    } catch (err) {
+      console.error("Error sending chat:", err);
+      toast.error("Gagal mengirim pesan");
+    }
+  };
 
   // Sync cache data jumlah bab dari Firestore/LocalStorage
   useEffect(() => {
@@ -210,24 +229,32 @@ const ForumPage = () => {
   };
 
   useEffect(() => {
-    const fetchUserProgress = async () => {
-      if (!currentUser?.uid || !selectedSubject) return;
-      try {
-        const progressRef = doc(db, "userProgress", currentUser.uid);
-        const progressSnap = await getDoc(progressRef);
+  const fetchUserProgress = async () => {
+    if (!currentUser?.uid || !selectedSubject) return;
+    try {
+      const progressRef = doc(db, "userProgress", currentUser.uid);
+      const progressSnap = await getDoc(progressRef);
+      
+      if (progressSnap.exists()) {
+        const data = progressSnap.data();
+        // Ambil mapel aktif, lalu ambil property 'order' di dalamnya
+        const mapelProgress = data[selectedSubject.id];
         
-        if (progressSnap.exists() && progressSnap.data()[selectedSubject.id] !== undefined) {
-          setMaxCompletedOrder(Number(progressSnap.data()[selectedSubject.id] || 0));
+        if (mapelProgress && mapelProgress.order !== undefined) {
+          setMaxCompletedOrder(Number(mapelProgress.order));
         } else {
-          setMaxCompletedOrder(0);
+          setMaxCompletedOrder(0); // Mapel ini belum pernah diselesaikan bab manapun
         }
-      } catch (err) {
-        console.error("Gagal mengambil progres belajar:", err);
+      } else {
+        setMaxCompletedOrder(0); // Dokumen progress belum ada sama sekali
       }
-    };
+    } catch (err) {
+      console.error("Gagal mengambil progres belajar:", err);
+    }
+  };
 
-    fetchUserProgress();
-  }, [currentUser, selectedSubject, activeMateriSubTab]);
+  fetchUserProgress();
+}, [currentUser, selectedSubject, activeMateriSubTab]);
 
   useEffect(() => {
     if (selectedChapter) {
@@ -356,61 +383,77 @@ const ForumPage = () => {
   };
 
   const handleFinishUjian = async (isTimeUp = false) => {
-    const soalList = selectedChapter.miniUlangan || [];
-    if (soalList.length === 0) return;
+  const soalList = selectedChapter.miniUlangan || [];
+  if (soalList.length === 0) return;
 
-    let benar = 0;
-    soalList.forEach((soal, idx) => {
-      const qId = soal.id || idx;
-      if (selectedUjianAns[qId] === soal.answer) {
-        benar++;
-      }
-    });
-
-    const finalScore = Math.round((benar / soalList.length) * 100);
-    setUjianScore(finalScore);
-    
-    const lulus = finalScore >= 75; 
-    setIsLulusUjian(lulus);
-
-    if (isTimeUp) {
-      toast.error("Waktu ujian habis! Jawaban kamu otomatis dikirim.");
+  let benar = 0;
+  soalList.forEach((soal, idx) => {
+    const qId = soal.id || idx;
+    if (selectedUjianAns[qId] === soal.answer) {
+      benar++;
     }
+  });
 
-    if (lulus && currentUser?.uid && selectedSubject) {
-      const currentOrder = Number(selectedChapter.order || 0);
-      const userRef = doc(db, "users", currentUser.uid);
-      const progressRef = doc(db, "userProgress", currentUser.uid);
+  const finalScore = Math.round((benar / soalList.length) * 100);
+  setUjianScore(finalScore);
+  
+  const lulus = finalScore >= 75; 
+  setIsLulusUjian(lulus);
 
-      try {
-        if (!hasCompletedThisChapterBefore) {
-          if (currentOrder > maxCompletedOrder) {
-            await setDoc(progressRef, {
-              [selectedSubject.id]: currentOrder
-            }, { merge: true });
-            setMaxCompletedOrder(currentOrder);
-          }
+  if (isTimeUp) {
+    toast.error("Waktu ujian habis! Jawaban kamu otomatis dikirim.");
+  }
 
-          await updateDoc(userRef, {
-            koin: increment(5),
-            exp: increment(20)
+  if (lulus && currentUser?.uid && selectedSubject) {
+    const currentOrder = Number(selectedChapter.order || 0);
+    const userRef = doc(db, "users", currentUser.uid);
+    const progressRef = doc(db, "userProgress", currentUser.uid);
+
+    try {
+      if (!hasCompletedThisChapterBefore) {
+        if (currentOrder > maxCompletedOrder) {
+          // Ganti setDoc menjadi updateDoc dengan Dot Notation
+          // Struktur target: userProgress/{uid} -> { [mapelId]: { order: X, time: Y } }
+          await updateDoc(progressRef, {
+            [`${selectedSubject.id}.order`]: currentOrder,
+            [`${selectedSubject.id}.time`]: serverTimestamp()
+          }).catch(async (err) => {
+            // Jaga-jaga jika dokumen userProgress/{uid} belum pernah dibuat sama sekali
+            if (err.code === 'not-found') {
+              await setDoc(progressRef, {
+                [selectedSubject.id]: {
+                  order: currentOrder,
+                  time: serverTimestamp()
+                }
+              }, { merge: true });
+            } else {
+              throw err;
+            }
           });
-          
-          toast.success("Selamat! Bab diselesaikan dan Hadiah Utama diklaim!");
-        } else {
-          await updateDoc(userRef, {
-            exp: increment(4) 
-          });
-          toast.success("Review Selesai! Kamu mendapatkan tambahan bonus +4 EXP");
+
+          setMaxCompletedOrder(currentOrder);
         }
-      } catch (err) {
-        console.error("Gagal mengupdate reward ke database:", err);
-        toast.error("Gagal memperbarui progres kuncian.");
-      }
-    }
 
-    setShowUjianResultModal(true);
-  };
+        await updateDoc(userRef, {
+          koin: increment(5),
+          exp: increment(20)
+        });
+        
+        toast.success("Selamat! Bab diselesaikan dan Hadiah Utama diklaim!");
+      } else {
+        await updateDoc(userRef, {
+          exp: increment(4) 
+        });
+        toast.success("Review Selesai! Kamu mendapatkan tambahan bonus +4 EXP");
+      }
+    } catch (err) {
+      console.error("Gagal mengupdate reward ke database:", err);
+      toast.error("Gagal memperbarui progres kuncian.");
+    }
+  }
+
+  setShowUjianResultModal(true);
+};
 
   const handleShareHasilUjian = async () => {
     if (!ujianCardRef.current) return;
@@ -714,8 +757,6 @@ const ForumPage = () => {
                 setActiveTab('materi');
                 setFullscreenLevel(0);
               }}
-              socket={socket}
-              onlineUserIds={onlineUserIds}
             />
           )}
 
