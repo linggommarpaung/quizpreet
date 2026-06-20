@@ -1,7 +1,7 @@
 // client/src/components/ui/LatihanSoalSection.jsx
 import React from 'react';
 import { FaCircleCheck, FaLightbulb, FaGraduationCap } from 'react-icons/fa6';
-import styles from '../../pages/ForumPage.module.css';
+import styles from './LatihanSoalSection.module.css';
 
 const LatihanSoalSection = ({
   latihanSoal = [],

@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
+// Menggunakan modul Firestore modular (v9/v10+)
+import { db } from '../config/firebaseConfig'; 
+import { doc, setDoc, updateDoc, onSnapshot, deleteDoc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { 
@@ -17,10 +19,6 @@ import {
     FaCircleInfo
 } from 'react-icons/fa6';
 import styles from './QuizLobby.module.css';
-import { SOCKET_URL } from '../config/socketConfig';
-
-// Koneksi socket diarahkan secara dinamis
-const socket = io(SOCKET_URL);
 
 const QuizLobby = () => {
     const { currentUser } = useAuth();
@@ -31,8 +29,11 @@ const QuizLobby = () => {
     const [selectedSubject, setSelectedSubject] = useState('mtk');
     const [inputRoomCode, setInputRoomCode] = useState('');
     const [lobbyData, setLobbyData] = useState(null);
-    const [showExitModal, setShowExitModal] = useState(false); // State untuk mengontrol pop-up konfirmasi
+    const [showExitModal, setShowExitModal] = useState(false); 
     const hasRequestedStatus = useRef(false);
+
+    // Ref untuk memantau data lawan sebelumnya (keperluan memicu toast)
+    const prevChallengerRef = useRef(null);
 
     const subjectsList = [
         { id: 'mtk', name: 'Matematika', icon: '📐', themeColor: '#2563eb' },
@@ -41,134 +42,213 @@ const QuizLobby = () => {
         { id: 'bing', name: 'Bahasa Inggris', icon: '🇬🇧', themeColor: '#eab308' }
     ];
 
-    // ==================== REALTIME SOCKET LISTENERS ====================
+    function generateRoomId() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 6; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    // ==================== REALTIME FIRESTORE LISTENERS ====================
     useEffect(() => {
-        socket.on('room_created', ({ roomId }) => {
-            toast.success('Lobby Berhasil Dibuat! 🚀');
-            setViewMode('inside');
-            navigate(`/contest/1v1/lobby/${roomId}`);
-        });
+        if (!lobbyId) return;
 
-        socket.on('room_updated', (data) => {
-            setLobbyData(data);
-        });
+        const cleanRoomId = lobbyId.trim().toUpperCase();
+        // Referensi dokumen di Firestore: collection 'lobbies_1v1', document 'KODEROOM'
+        const roomDocRef = doc(db, 'lobbies_1v1', cleanRoomId);
 
-        socket.on('join_error', ({ message }) => {
-            toast.error(message);
-            setLobbyData(null);
-            setViewMode('menu');
-            navigate('/contest/1v1');
-        });
- 
-        socket.on('challenger_joined_toast', ({ message }) => {
-            toast.success(message, { 
-                icon: '⚔️', 
-                duration: 5000,
-                style: {
-                    border: '1px solid #2563eb',
-                    padding: '16px',
-                    color: '#1e3a8a',
-                    fontWeight: 'bold'
+        // onSnapshot adalah pengganti onValue/socket.on untuk memantau data secara realtime
+        const unsubscribe = onSnapshot(roomDocRef, (snapshot) => {
+            if (!snapshot.exists()) {
+                if (viewMode === 'inside') {
+                    toast.error('Lobby telah dibubarkan oleh Host!', { duration: 5000, icon: '🚪' });
+                    setLobbyData(null);
+                    setViewMode('menu');
+                    navigate('/contest/1v1');
                 }
-            });
-        });
+                return;
+            }
 
-        // Notifikasi khusus untuk Host saat Challenger keluar secara sengaja
-        socket.on('challenger_left_notification', ({ message }) => {
-            toast.error(message, { icon: '🏃‍♂️', duration: 4000 });
-        });
+            const data = snapshot.data();
 
-        // Trigger perpindahan layar otomatis serentak ketika game dimulai
-        socket.on('game_started_broadcast', ({ roomId, subject }) => {
-            toast.success('Pertandingan Dimulai! Mengalihkan ke Arena...', { icon: '🎮' });
-        });
+            // Deteksi game dimulai
+            if (data.status === 'playing') {
+                toast.success('Pertandingan Dimulai! Mengalihkan ke Arena...', { icon: '🎮' });
+            }
 
-        // Kawan mental keluar massal (Saat host membubarkan / keluar room)
-        socket.on('player_left_broadcast', ({ message }) => {
-            toast.error(message, { duration: 5000, icon: '🚪' });
-            setLobbyData(null);
-            setViewMode('menu');
-            navigate('/contest/1v1');
+            // Logika memicu toast penantang masuk/keluar
+            if (data.challenger && !prevChallengerRef.current) {
+                toast.success(`${data.challenger.name} telah memasuki lobby pertandingan, siap dimulai!`, { 
+                    icon: '⚔️', 
+                    duration: 5000,
+                    style: {
+                        border: '1px solid #2563eb',
+                        padding: '16px',
+                        color: '#1e3a8a',
+                        fontWeight: 'bold'
+                    }
+                });
+            } else if (!data.challenger && prevChallengerRef.current) {
+                toast.error(`${prevChallengerRef.current.name} telah keluar dari lobby mabar.`, { icon: '🏃‍♂️', duration: 4000 });
+            }
+
+            setLobbyData(data);
+            prevChallengerRef.current = data.challenger || null;
         });
 
         return () => {
-            socket.off('room_created');
-            socket.off('room_updated');
-            socket.off('join_error');
-            socket.off('challenger_left_notification');
-            socket.off('challenger_joined_toast');
-            socket.off('game_started_broadcast');
-            socket.off('player_left_broadcast');
+            unsubscribe();
         };
-    }, [navigate]);
+    }, [lobbyId, viewMode, navigate]);
 
     // ==================== SYNC URL / REFRESH BROWSER (SHARE LINK) ====================
     useEffect(() => {
-        if (lobbyId && currentUser) {
-            setViewMode('inside');
-            if (!hasRequestedStatus.current) {
-                socket.emit('get_room_status', { 
-                    roomId: lobbyId.trim().toUpperCase(), 
-                    uid: currentUser.uid,
-                    name: currentUser.displayName || 'Pemain Kuis',
-                    photoURL: currentUser.photoURL || ''
-                });
+        const checkLinkJoin = async () => {
+            if (lobbyId && currentUser && !hasRequestedStatus.current) {
+                setViewMode('inside');
+                const cleanCode = lobbyId.trim().toUpperCase();
+                const roomDocRef = doc(db, 'lobbies_1v1', cleanCode);
+
+                try {
+                    const snapshot = await getDoc(roomDocRef);
+                    if (!snapshot.exists()) {
+                        toast.error('Sesi tautan mabar tidak ditemukan atau sudah hangus!');
+                        setViewMode('menu');
+                        navigate('/contest/1v1');
+                        return;
+                    }
+
+                    const data = snapshot.data();
+
+                    if (data.host.uid === currentUser.uid || (data.challenger && data.challenger.uid === currentUser.uid)) {
+                        return; // Host atau Challenger lama menyegarkan halaman
+                    } else if (!data.challenger) {
+                        // Slot kosong, isi data penantang baru
+                        await updateDoc(roomDocRef, {
+                            challenger: {
+                                uid: currentUser.uid,
+                                name: currentUser.displayName || 'Penantang',
+                                photoURL: currentUser.photoURL || '',
+                                isReady: true
+                            }
+                        });
+                    } else {
+                        toast.error('Maaf, room duel ini sudah penuh!');
+                        setViewMode('menu');
+                        navigate('/contest/1v1');
+                    }
+                } catch (err) {
+                    console.error(err);
+                }
                 hasRequestedStatus.current = true;
             }
-        } else {
+        };
+
+        if (!lobbyId) {
             setViewMode('menu');
             setLobbyData(null);
             hasRequestedStatus.current = false;
+            prevChallengerRef.current = null;
+        } else {
+            checkLinkJoin();
         }
-    }, [lobbyId, currentUser]);
+    }, [lobbyId, currentUser, navigate]);
 
     // ==================== EVENT HANDLERS FUNGSI ====================
-    const handleCreateRoom = () => {
+    const handleCreateRoom = async () => {
         if (!currentUser) return toast.error('Silakan login terlebih dahulu!');
-        socket.emit('create_room', {
-            uid: currentUser.uid,
-            name: currentUser.displayName || 'Host Mabar',
-            photoURL: currentUser.photoURL || '',
-            subject: selectedSubject
-        });
+        
+        const roomId = generateRoomId();
+        const roomDocRef = doc(db, 'lobbies_1v1', roomId);
+
+        const newLobbyStructure = {
+            roomId: roomId,
+            status: 'waiting',
+            subject: selectedSubject,
+            host: {
+                uid: currentUser.uid,
+                name: currentUser.displayName || 'Host Mabar',
+                photoURL: currentUser.photoURL || '',
+                isReady: true
+            },
+            challenger: null
+        };
+
+        try {
+            await setDoc(roomDocRef, newLobbyStructure);
+            toast.success('Lobby Berhasil Dibuat! 🚀');
+            setViewMode('inside');
+            navigate(`/contest/1v1/lobby/${roomId}`);
+        } catch (error) {
+            console.error(error);
+            toast.error('Gagal membuat room, coba lagi.');
+        }
     };
 
-    const handleJoinRoomByCode = () => {
+    const handleJoinRoomByCode = async () => {
         if (!inputRoomCode.trim()) return toast.error('Silakan ketik kode room dulu!');
         if (!currentUser) return toast.error('Silakan login terlebih dahulu!');
 
         const cleanCode = inputRoomCode.trim().toUpperCase();
-        
-        setViewMode('inside');
-        navigate(`/contest/1v1/lobby/${cleanCode}`);
+        const roomDocRef = doc(db, 'lobbies_1v1', cleanCode);
 
-        socket.emit('join_room', {
-            roomId: cleanCode,
-            uid: currentUser.uid,
-            name: currentUser.displayName || 'Penantang',
-            photoURL: currentUser.photoURL || ''
-        });
+        try {
+            const snapshot = await getDoc(roomDocRef);
+            if (!snapshot.exists()) {
+                return toast.error('Kode room tidak valid atau sudah kedaluwarsa!');
+            }
+
+            const data = snapshot.data();
+
+            if (data.challenger && data.challenger.uid !== currentUser.uid) {
+                return toast.error('Maaf, slot pertandingan sudah penuh!');
+            }
+
+            if (!data.challenger) {
+                await updateDoc(roomDocRef, {
+                    challenger: {
+                        uid: currentUser.uid,
+                        name: currentUser.displayName || 'Penantang',
+                        photoURL: currentUser.photoURL || '',
+                        isReady: true
+                    }
+                });
+            }
+
+            setViewMode('inside');
+            navigate(`/contest/1v1/lobby/${cleanCode}`);
+        } catch (error) {
+            console.error(error);
+            toast.error('Gagal masuk ke room.');
+        }
     };
 
-    // Fungsi pemicu klik tombol back (menampilkan modal pop-up konfirmasi)
     const handleTriggerExitRequest = () => {
         setShowExitModal(true);
     };
 
-    // Eksekusi pemutusan resmi setelah menekan tombol "Ya, Keluar" di pop-up
-    const handleConfirmActualExit = () => {
+    const handleConfirmActualExit = async () => {
         setShowExitModal(false);
         const isCurrentUserHost = lobbyData?.host?.uid === currentUser?.uid;
+        const cleanCode = lobbyId.toUpperCase();
+        const roomDocRef = doc(db, 'lobbies_1v1', cleanCode);
 
-        if (isCurrentUserHost) {
-            // Jika dia Host, hapus total room dari database backend
-            socket.emit('host_leave_room', { roomId: lobbyId.toUpperCase() });
-        } else {
-            // Jika dia Lawan, kosongkan slot challenger saja
-            socket.emit('challenger_leave_room', { roomId: lobbyId.toUpperCase() });
+        try {
+            if (isCurrentUserHost) {
+                // Jika host keluar, hapus dokumen kamar mabar dari Firestore
+                await deleteDoc(roomDocRef);
+            } else {
+                // Jika penantang keluar, kosongkan field 'challenger'
+                await updateDoc(roomDocRef, {
+                    challenger: null
+                });
+            }
+        } catch (error) {
+            console.error("Gagal keluar ruangan:", error);
         }
 
-        // Kembalikan state frontend ke menu utama secara instan
         setLobbyData(null);
         setViewMode('menu');
         navigate('/contest/1v1');
@@ -182,11 +262,16 @@ const QuizLobby = () => {
         }
     };
 
-    const handleStartMatchGame = () => {
+    const handleStartMatchGame = async () => {
         if (!lobbyData?.challenger) {
             return toast.error('Tidak bisa memulai, tunggu lawan bergabung dulu!');
         }
-        socket.emit('start_game_trigger', { roomId: lobbyId.toUpperCase() });
+        
+        const cleanCode = lobbyId.toUpperCase();
+        const roomDocRef = doc(db, 'lobbies_1v1', cleanCode);
+        
+        // Update status di Firestore menjadi 'playing' untuk trigger lawan
+        await updateDoc(roomDocRef, { status: 'playing' });
     };
 
     const currentSubjectInfo = subjectsList.find(s => s.id === (lobbyData?.subject || selectedSubject));
@@ -198,7 +283,6 @@ const QuizLobby = () => {
         return (
             <div className={styles.lobbyMainWrapper}>
                 <div className={styles.headerTopZone}>
-                    {/* Mengubah fungsi klik kembali agar memicu pop-up konfirmasi */}
                     <button className={styles.circularBackBtn} onClick={handleTriggerExitRequest}>
                         <FaArrowLeft />
                     </button>

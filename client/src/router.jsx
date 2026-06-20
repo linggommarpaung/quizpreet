@@ -7,6 +7,7 @@ import Spinner from './components/ui/Spinner';
 import MainLayout from './components/ui/MainLayout';
 import SubNavForum from './components/SubNavForum';
 import AdminLayout from './components/AdminLayout';
+import QuizStart from './components/ui/QuizStart';
 
 // Lazy load page components
 const IndexPage = lazy(() => import('./pages/IndexPage'));
@@ -159,6 +160,26 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <MainLayout>
                 <QuizPage />
+            </MainLayout>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'quiz/list/:mapelId',
+        element: (
+          <RequireAuth>
+            <MainLayout>
+                <QuizPage />
+            </MainLayout>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'quiz/list/:mapelId/:quizId',
+        element: (
+          <RequireAuth>
+            <MainLayout>
+                <QuizStart />
             </MainLayout>
           </RequireAuth>
         ),

@@ -2,7 +2,7 @@
 import React from 'react';
 import { FaArrowLeft, FaSpinner, FaLock, FaCircleCheck, FaUnlock, FaChevronRight } from 'react-icons/fa6';
 import { toast } from 'react-hot-toast';
-import styles from '../../pages/ForumPage.module.css'; // Memakai modul css utama agar style tetap menyatu
+import styles from './ChapterList.module.css';
 
 const ChapterList = ({ 
   selectedSubject, 

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Document, Page } from 'react-pdf';
 import { FaSpinner, FaClock } from 'react-icons/fa6';
-import styles from '../../pages/ForumPage.module.css';
+import styles from './PdfMateriReader.module.css';
 
 const PdfMateriReader = ({
   pdfUrl,

@@ -76,17 +76,18 @@ const ForumPage = () => {
   const [inputChat, setInputChat] = useState('');
   const chatEndRef = useRef(null);
 
-  const [subjectCounts, setSubjectCounts] = useState(() => {
-    const savedCounts = localStorage.getItem('forum_subject_counts');
-    return savedCounts ? JSON.parse(savedCounts) : { mtk: 0, ipa: 0, ips: 0, inggris: 0, indonesia: 0 };
-  });
+  const [allChapters, setAllChapters] = useState([]);
+  
+  const getChapterCount = (subjectId) => {
+    return allChapters.filter(ch => ch.subjectId === subjectId).length;
+  };
 
   const subjectsData = [
-    { id: 'mtk', name: 'Matematika', icon: <FaCalculator />, totalChapters: subjectCounts.mtk },
-    { id: 'ipa', name: 'Ilmu Pengetahuan Alam', icon: <FaFlask />, totalChapters: subjectCounts.ipa },
-    { id: 'ips', name: 'Ilmu Pengetahuan Sosial', icon: <FaEarthAsia />, totalChapters: subjectCounts.ips },
-    { id: 'inggris', name: 'Bahasa Inggris', icon: <FaLanguage />, totalChapters: subjectCounts.inggris },
-    { id: 'indonesia', name: 'Bahasa Indonesia', icon: <FaFont />, totalChapters: subjectCounts.indonesia }
+    { id: 'mtk', name: 'Matematika', icon: <FaCalculator />, totalChapters: getChapterCount('mtk') },
+    { id: 'ipa', name: 'Ilmu Pengetahuan Alam', icon: <FaFlask />, totalChapters: getChapterCount('ipa') },
+    { id: 'ips', name: 'Ilmu Pengetahuan Sosial', icon: <FaEarthAsia />, totalChapters: getChapterCount('ips') },
+    { id: 'inggris', name: 'Bahasa Inggris', icon: <FaLanguage />, totalChapters: getChapterCount('inggris') },
+    { id: 'indonesia', name: 'Bahasa Indonesia', icon: <FaFont />, totalChapters: getChapterCount('indonesia') }
   ];
 
   // =======================================================================
@@ -164,40 +165,20 @@ const ForumPage = () => {
     }
   };
 
-  // Sync cache data jumlah bab dari Firestore/LocalStorage
   useEffect(() => {
-    const syncForumCache = async () => {
+    const fetchAllChaptersForCount = async () => {
       try {
-        const metaQ = query(collection(db, 'metadata'), where('__name__', '==', 'forum_version'));
-        const metaSnap = await getDocs(metaQ);
-        
-        let serverVersion = 0;
-        if (!metaSnap.empty) {
-          serverVersion = metaSnap.docs[0].data().version || 0;
-        }
-
-        const localVersion = parseInt(localStorage.getItem('forum_data_version') || '-1');
-
-        if (serverVersion > localVersion || localVersion === -1) {
-          const chaptersSnapshot = await getDocs(collection(db, 'chapters'));
-          const counts = { mtk: 0, ipa: 0, ips: 0, inggris: 0, indonesia: 0 };
-          
-          chaptersSnapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.subjectId && counts[data.subjectId] !== undefined) {
-              counts[data.subjectId] += 1;
-            }
-          });
-
-          setSubjectCounts(counts);
-          localStorage.setItem('forum_subject_counts', JSON.stringify(counts));
-          localStorage.setItem('forum_data_version', serverVersion.toString());
-        }
+        const querySnapshot = await getDocs(collection(db, 'chapters'));
+        const chapterList = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setAllChapters(chapterList);
       } catch (error) {
-        console.error("Gagal sinkronisasi cache forum:", error);
+        console.error("Gagal menarik data bab untuk dihitung:", error);
       }
     };
-    syncForumCache();
+    fetchAllChaptersForCount();
   }, []);
 
   // Auto-scroll ke bawah saat chat baru masuk atau saat berpindah ke tab chat
@@ -602,7 +583,7 @@ const ForumPage = () => {
               {/* LEVEL 0: DAFTAR MATA PELAJARAN */}
               {fullscreenLevel === 0 && !selectedSubject && (
                 <div className={styles.selectionStandardGrid}>
-                  <h3 className={styles.sectionHeaderTitle}>Mata Pelajaran Utama</h3>
+                  <h3 className={styles.sectionHeaderTitle}>Mata Pelajaran Materi</h3>
                   <div className={styles.subjectBoxRow}>
                     {subjectsData.map(sub => (
                       <div key={sub.id} className={styles.subjectCardRow} onClick={() => handleSelectSubject(sub)}>

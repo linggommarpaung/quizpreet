@@ -1,0 +1,290 @@
+
+.ujianWrapper {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.gerbangUjianBox {
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+}
+:global(.dark) .gerbangUjianBox { background-color: #1e293b; border-color: #334155; }
+
+.aturanUjianList {
+  text-align: left;
+  margin: 20px auto;
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 0.88rem;
+}
+
+.startUjianBtn {
+  background: linear-gradient(90deg, #2563eb, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* LEMBARAN AKTIF POLOSAN (RATA DI HALAMAN) */
+.lembaranUjianActive {
+  width: 100%;
+  position: relative;
+}
+
+.floatingTimerHeader {
+  position: sticky;
+  top: 10px;
+  z-index: 50;
+  background-color: #1e293b;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 30px;
+  width: fit-content;
+  margin: 0 auto 20px auto;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.timerKritis {
+  color: #f87171;
+  animation: blinkRed 1s infinite;
+}
+
+@keyframes blinkRed {
+  50% { opacity: 0.4; }
+}
+
+.judulDaftarSoal {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 25px;
+  border-bottom: 2px dashed var(--border-color, #cbd5e1);
+  padding-bottom: 10px;
+}
+
+/* AREA SCROLL KHUSUS DERETAN SOAL (POLOSAN TANPA BACKDROP KAKU) */
+.scrollableSoalArea {
+  max-height: 48vh; /* Membatasi tinggi area soal agar tidak meluber keluar layar */
+  overflow-y: auto;  /* Mengaktifkan scroll vertikal jika soalnya banyak */
+  padding-right: 8px; /* Jarak kecil di kanan biar gak mepet sama scrollbar bawaan HP */
+  background: transparent; /* Dipastikan polos transparan menyatu dengan halaman */
+  border: none;
+}
+
+/* Modifikasi tampilan scrollbar biar estetik dan tipis (Khusus browser berbasis Chrome/Webkit) */
+.scrollableSoalArea::-webkit-scrollbar {
+  width: 5px;
+}
+.scrollableSoalArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollableSoalArea::-webkit-scrollbar-thumb {
+  background-color: var(--border-color, #cbd5e1);
+  border-radius: 10px;
+}
+:global(.dark) .scrollableSoalArea::-webkit-scrollbar-thumb {
+  background-color: #334155;
+}
+
+.barisSoalPolos {
+  margin-bottom: 28px;
+  padding-bottom: 15px;
+}
+
+.teksSoalUjian {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-color, #1e293b);
+}
+
+.pilihanUjianRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btnOpsiUjianPolos {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--border-color, #cbd5e1);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  color: var(--text-color, #334155);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.btnOpsiUjianTerpilih {
+  background-color: rgba(37, 99, 235, 0.08);
+  border-color: #2563eb;
+  font-weight: 700;
+}
+.btnOpsiUjianTerpilih .bulatanCeklist {
+  color: #2563eb;
+}
+
+.bulatanCeklist {
+  font-size: 1.1rem;
+  color: #94a3b8;
+}
+
+.submitUjianActionBtn {
+  width: 100%;
+  background-color: #1e293b;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 20px;
+  margin-bottom: 25px;
+}
+:global(.dark) .submitUjianActionBtn { background-color: #3b82f6; }
+
+/* MODAL / BACKDROP POP-UP HASIL */
+.backdropModalUjian {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.cardHasilUjianKertas {
+  background-color: #ffffff;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 420px;
+  padding: 26px;
+  position: relative;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  color: #1e293b; /* Dipaksa cerah agar saat di-convert html2canvas hasilnya estetik kontras */
+}
+
+.badgeStatusLulus {
+  background-color: #10b981;
+  color: white;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 6px 14px;
+  border-radius: 20px;
+  width: fit-content;
+  margin: 0 auto 12px auto;
+  letter-spacing: 1px;
+}
+
+.badgeStatusRemedial {
+  background-color: #ef4444;
+  color: white;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 6px 14px;
+  border-radius: 20px;
+  width: fit-content;
+  margin: 0 auto 12px auto;
+  letter-spacing: 1px;
+}
+
+.titleHasilChapter {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.dividerGaris {
+  height: 2px;
+  background-color: #f1f5f9;
+  margin: 15px 0;
+}
+
+.scoreBesarMelingkar {
+  margin: 20px auto;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: 4px dashed #2563eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.labelScoreKecil { font-size: 0.65rem; color: #64748b; font-weight: 700; }
+.angkaScoreUtama { font-size: 2.2rem; font-weight: 900; color: #1e293b; line-height: 1; margin: 2px 0; }
+.labelKkmKeterangan { font-size: 0.65rem; color: #94a3b8; }
+
+.boxRewardUjianKecil {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+.boxRewardUjianKecil h5 { margin: 0 0 6px 0; font-size: 0.8rem; color: #475569; }
+
+.rowRewardAset {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #10b981;
+}
+
+.notifReviewSaja { font-size: 0.6rem; color: #94a3b8; margin: 6px 0 0 0; }
+
+.grupAksiTombolModal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btnAksiShare {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 11px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.rowAksiNavigasi {
+  display: flex;
+  gap: 10px;
+}
+
+.btnAksiKembaliList, .btnAksiLanjutBab {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btnAksiKembaliList { background-color: #f1f5f9; color: #475569; }
+.btnAksiLanjutBab { background-color: #1e293b; color: white; border: none; }

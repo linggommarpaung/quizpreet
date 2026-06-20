@@ -1,7 +1,7 @@
 // client/src/components/ui/MiniUlanganSection.jsx
 import React from 'react';
 import { FaGraduationCap, FaCircleCheck, FaClock, FaAward, FaLock, FaPaperPlane, FaFaceFrown, FaCoins, FaBolt, FaShareNodes } from 'react-icons/fa6';
-import styles from '../../pages/ForumPage.module.css';
+import styles from './MiniUlanganSection.module.css';
 
 const MiniUlanganSection = ({
   selectedChapter,
