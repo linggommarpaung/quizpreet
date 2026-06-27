@@ -87,7 +87,7 @@ const MainLayout = ({ children }) => {
             {/* --- TOP NAVBAR (Tetap selalu muncul di semua halaman) --- */}
             <header className={styles.topNavbar}>
                 <div className={styles.logoArea} onClick={() => navigate('/dashboard')}>
-                    <span className={styles.logoText}>QuizPreet</span>
+                    <span className={styles.logoText}>QuizPride</span>
                     <span className={styles.logoBadge}>Olimpiade</span>
                 </div>
 

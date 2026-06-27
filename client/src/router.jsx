@@ -28,10 +28,8 @@ const EditThemePage = lazy(() => import('./pages/EditThemePage'));
 const AddThemePage = lazy(() => import('./pages/AddThemePage'));
 const EditQuestionPage = lazy(() => import('./pages/EditQuestionPage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
-const MaterialPage = lazy(() => import('./pages/MaterialPage'));
 const ShopPage = lazy(() => import('./pages/ShopPage'));
 const MateriListPage = lazy(() => import('./pages/admin/MateriListPage'));
-const MateriSubjectPage = lazy(() => import('./pages/admin/MateriSubjectPage'));
 
 // A wrapper component to provide auth and GDPR context to the app
 const Root = () => (
@@ -225,14 +223,24 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'materi/:topicId',
+        path: 'forum/list/:subjectId',
         element: (
           <RequireAuth>
             <MainLayout>
-              <MaterialPage />
+              <ForumPage />
             </MainLayout>
           </RequireAuth>
         ),
+      },
+      {
+        path: 'forum/list/:subjectId/:chapterId',
+        element: (
+          <RequireAuth>
+            <MainLayout>
+              <ForumPage />
+            </MainLayout>
+          </RequireAuth>
+          ),
       },
       {
         path: 'admin',
@@ -256,7 +264,6 @@ export const router = createBrowserRouter([
           },
           { path: 'setting', element: <SettingsPage /> },
           { path: 'materi', element: <MateriListPage /> },
-          { path: 'materi/:subjectId', element: <MateriSubjectPage /> },
         ],
       },
       { path: '*', element: <Navigate to="/" /> },

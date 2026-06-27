@@ -12,7 +12,7 @@ import { getAppName } from '../services/firestoreService';
 const LandingPage = () => {
     const navigate = useNavigate();
     const { requestConsent } = useGDPR();
-    const [appName, setAppName] = useState('QuizPreet');
+    const [appName, setAppName] = useState('QuizPride');
 
     // Daftar mata pelajaran Olimpiade untuk tampilan interaktif
     const subjects = [

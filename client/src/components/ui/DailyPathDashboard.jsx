@@ -1,15 +1,17 @@
 // client/src/components/ui/DailyPathDashboard.jsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllDailyPaths, getUserProgress } from '../../services/firestoreService';
+import { getAllDailyPaths, getUserProgress, updateUserData } from '../../services/firestoreService';
 import styles from './DailyPathDashboard.module.css';
 import Spinner from './Spinner';
-import { FaStar, FaChartLine, FaCoins, FaChevronRight, FaUsers, FaUser, FaBookOpen } from 'react-icons/fa6';
+import { FaStar, FaChartLine, FaCoins, FaChevronRight, FaUsers, FaUser, FaBookOpen, FaRocket, FaGamepad } from 'react-icons/fa6';
 import { toast } from 'react-hot-toast';
 
-// Ambil style border kustom toko global jika ada
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../firebase'; 
+
 import '../../components/border.css';
 
 const DailyPathDashboard = () => {
@@ -17,14 +19,14 @@ const DailyPathDashboard = () => {
     const navigate = useNavigate();
 
     const [showInfoModal, setShowInfoModal] = useState(false);
-    
-    // State control index halaman slider (0 = Materi, 1 = Kuis)
     const [activeSliderIndex, setActiveSliderIndex] = useState(0);
     const [dynamicMaterials, setDynamicMaterials] = useState([]);
     const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
-    
     const [realRank, setRealRank] = useState('-');
     const [loading, setLoading] = useState(true);
+
+    const prevLevelRef = useRef();
+    const hasTriggeredRef = useRef(false);
 
     useEffect(() => {
         const hasSeenInfo = localStorage.getItem('hasSeenFullscreenInfo');
@@ -33,7 +35,6 @@ const DailyPathDashboard = () => {
         }
     }, []);
 
-    // Timer Auto-Slide otomatis geser ke samping setiap 4 detik secara bergantian
     useEffect(() => {
         const interval = setInterval(() => {
             setActiveSliderIndex((prevIndex) => (prevIndex === 0 ? 1 : 0));
@@ -47,24 +48,10 @@ const DailyPathDashboard = () => {
         toast.success('Selamat belajar! Jangan lupa cek menu Pengaturan ya 🚀');
     };
 
-    const handleShortcutMateriClick = (pathId) => {
-        navigate('/forum', { state: { activeTab: 'materi', autoOpenId: pathId } });
-    };
-
-    const handleShortcutQuizClick = () => {
-        navigate('/quiz');
-    };
-
-    // =======================================================================
-    // 🟢 LOGIKA AMBIL DATA PROGRESS DAN CHAPTER SECARA DINAMIS
-    // =======================================================================
     const fetchData = useCallback(async () => {
         if (!currentUser?.uid) return;
         setLoading(true);
         try {
-            console.log("Dashboard fetch data untuk UID:", currentUser.uid);
-            
-            // A. Ambil Progres User & Data Leaderboard secara paralel
             const [progressData, leaderboardData] = await Promise.all([
                 getUserProgress(currentUser.uid),
                 getLeaderboardData()
@@ -73,39 +60,9 @@ const DailyPathDashboard = () => {
             if (progressData) {
                 const availableSubjects = ['mtk', 'ipa', 'ips', 'inggris', 'indonesia'];
                 
-                // =======================================================================
-                // 1. PROSES FILTER MATERI (KODE BACKUP AMAN KAMU - TIDAK DIUBAH)
-                // =======================================================================
-                const activeSubjects = [];
-                availableSubjects.forEach(subject => {
-                    const subjectMap = progressData[subject];
-                    if (subjectMap && subjectMap.order !== undefined && Number(subjectMap.order) > 0) {
-                        let timestampMs = 0;
-                        if (subjectMap.time) {
-                            if (typeof subjectMap.time.toDate === 'function') {
-                                timestampMs = subjectMap.time.toDate().getTime();
-                            } else if (subjectMap.time.seconds) {
-                                timestampMs = subjectMap.time.seconds * 1000;
-                            } else {
-                                timestampMs = new Date(subjectMap.time).getTime() || Date.now();
-                            }
-                        } else {
-                            timestampMs = Date.now(); 
-                        }
-
-                        activeSubjects.push({
-                            subjectId: subject,
-                            currentOrder: Number(subjectMap.order),
-                            time: timestampMs
-                        });
-                    }
-                });
-
-                activeSubjects.sort((a, b) => b.time - a.time);
-                const topTwoSubjects = activeSubjects.slice(0, 2);
-
-                const allChaptersFromDB = await getAllDailyPaths(); // Master Materi/Chapters
-                const filteredMaterials = [];
+                const allChaptersFromDB = await getAllDailyPaths(); 
+                const snapshotDailyPaths = await getDocs(collection(db, 'dailyPaths'));
+                const allDailyPathsFromDB = snapshotDailyPaths.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                 const formatSubjectName = (id) => {
                     if (id === 'mtk') return 'Matematika';
@@ -116,152 +73,201 @@ const DailyPathDashboard = () => {
                     return id.toUpperCase();
                 };
 
-                topTwoSubjects.forEach(activeSub => {
-                    const matchedChapter = allChaptersFromDB.find(ch => 
-                        String(ch.subjectId).toLowerCase() === String(activeSub.subjectId).toLowerCase() && 
-                        Number(ch.order) === Number(activeSub.currentOrder)
-                    );
+                // 1. FILTER MATERI TERBARU
+                const activeSubjects = [];
+                availableSubjects.forEach(subject => {
+                    const subjectMap = progressData[subject];
+                    if (subjectMap && subjectMap.order !== undefined && Number(subjectMap.order) > 0) {
+                        let timestampMs = 0;
+                        if (subjectMap.time) {
+                            if (typeof subjectMap.time.toDate === 'function') timestampMs = subjectMap.time.toDate().getTime();
+                            else if (subjectMap.time.seconds) timestampMs = subjectMap.time.seconds * 1000;
+                            else timestampMs = new Date(subjectMap.time).getTime() || Date.now();
+                        }
 
-                    if (matchedChapter) {
-                        filteredMaterials.push({
-                            id: matchedChapter.id || matchedChapter.chapterId || matchedChapter.uid,
-                            title: matchedChapter.title || `Bab ${matchedChapter.order}`,
-                            subject: formatSubjectName(activeSub.subjectId),
-                            xpReward: matchedChapter.xpReward || 20
-                        });
-                    } else {
-                        filteredMaterials.push({
-                            id: `fallback-${activeSub.subjectId}-${activeSub.currentOrder}`,
-                            title: `Bab ${activeSub.currentOrder}`,
-                            subject: formatSubjectName(activeSub.subjectId),
-                            xpReward: 20
+                        activeSubjects.push({ 
+                            namaMap: subject, 
+                            order: Number(subjectMap.order), 
+                            time: timestampMs 
                         });
                     }
                 });
 
+                activeSubjects.sort((a, b) => b.time - a.time);
+                const topTwoSubjects = activeSubjects.slice(0, 2);
+                const filteredMaterials = [];
 
-                // =======================================================================
-                // 2. PROSES FILTER QUIZ YANG BARU (BERDASARKAN orderq & timeq DI DALAM MAP MAPEL)
-                // =======================================================================
+                topTwoSubjects.forEach(activeSub => {
+                    const matchedChapter = allChaptersFromDB.find(rawDoc => {
+                        const ch = (typeof rawDoc.data === 'function') ? rawDoc.data() : rawDoc;
+                        const dbSubjectId = ch.subjectId || ch.subject_id || ch.SubjectId || ch.subjectID || "";
+                        const dbOrder = ch.order || ch.Order || 0;
+
+                        return String(dbSubjectId).toLowerCase() === String(activeSub.namaMap).toLowerCase() && 
+                               Number(dbOrder) === Number(activeSub.order);
+                    });
+
+                    if (matchedChapter) {
+                        const chData = (typeof matchedChapter.data === 'function') ? matchedChapter.data() : matchedChapter;
+                        const finalUid = matchedChapter.id || chData.id || chData.uid || chData.chapterId || "id_tidak_ditemukan";
+
+                        filteredMaterials.push({
+                            uidchapter: finalUid,
+                            title: chData.title || `Bab ${activeSub.order}`,
+                            namaMap: activeSub.namaMap,
+                            subjectDisplay: activeSub.namaMap.toUpperCase(),
+                            xpReward: chData.xpReward || 20
+                        });
+                    }
+                });
+
+                // 2. FILTER KUIS TERBARU
                 const activeQuizzes = [];
-                
                 availableSubjects.forEach(subject => {
                     const subjectMap = progressData[subject];
-                    
                     if (subjectMap && subjectMap.orderq !== undefined && Number(subjectMap.orderq) > 0) {
                         let timestampMs = 0;
-                        
                         if (subjectMap.timeq) {
-                            if (typeof subjectMap.timeq.toDate === 'function') {
-                                timestampMs = subjectMap.timeq.toDate().getTime();
-                            } else if (subjectMap.timeq.seconds) {
-                                timestampMs = subjectMap.timeq.seconds * 1000;
-                            } else {
-                                timestampMs = new Date(subjectMap.timeq).getTime() || Date.now();
-                            }
-                        } else {
-                            timestampMs = Date.now(); 
+                            if (typeof subjectMap.timeq.toDate === 'function') timestampMs = subjectMap.timeq.toDate().getTime();
+                            else if (subjectMap.timeq.seconds) timestampMs = subjectMap.timeq.seconds * 1000;
+                            else timestampMs = new Date(subjectMap.timeq).getTime() || Date.now();
                         }
 
-                        activeQuizzes.push({
-                            subjectId: subject,       
-                            currentOrderQ: Number(subjectMap.orderq),
-                            timeq: timestampMs
-                        });
+                        activeQuizzes.push({ subjectId: subject, currentOrderQ: Number(subjectMap.orderq), timeq: timestampMs });
                     }
                 });
 
                 activeQuizzes.sort((a, b) => b.timeq - a.timeq);
                 const topTwoQuizzes = activeQuizzes.slice(0, 2);
-
                 const filteredQuizzes = [];
-                const allQuizFromDB = allChaptersFromDB; 
 
                 topTwoQuizzes.forEach(activeQuiz => {
-                    const matchedQuiz = allQuizFromDB.find(pathDoc => {
-                        if (!pathDoc.themeCode) return false;
+                    const matchedQuiz = allDailyPathsFromDB.find(rawDoc => {
+                        const q = (typeof rawDoc.data === 'function') ? rawDoc.data() : rawDoc;
+                        const dbMapel = q.mapel || "";
+                        const dbThemeCodeStr = q.themeCode || "Q0";
                         
-                        const codeNumbers = pathDoc.themeCode.replace(/^\D+/g, ''); 
-                        const themeOrder = Number(codeNumbers);
-                        const themeLetters = pathDoc.themeCode.replace(/[0-9]/g, '').toLowerCase();
+                        const dbThemeCodeNum = Number(dbThemeCodeStr.replace(/[^0-9]/g, '')) || 0;
 
-                        return themeLetters === activeQuiz.subjectId && themeOrder === activeQuiz.currentOrderQ;
+                        return String(dbMapel).toLowerCase() === String(activeQuiz.subjectId).toLowerCase() && 
+                               dbThemeCodeNum === Number(activeQuiz.currentOrderQ);
                     });
 
                     if (matchedQuiz) {
+                        const qData = (typeof matchedQuiz.data === 'function') ? matchedQuiz.data() : matchedQuiz;
+                        const finalUid = matchedQuiz.id || qData.id || qData.uid || "id_tidak_ditemukan";
+
                         filteredQuizzes.push({
-                            id: matchedQuiz.id || `quiz-${activeQuiz.subjectId}-${activeQuiz.currentOrderQ}`,
-                            title: matchedQuiz.theme || `Kuis Tantangan ${matchedQuiz.themeCode}`,
+                            id: finalUid,
+                            title: qData.theme || `Kuis Paket ${activeQuiz.currentOrderQ}`,
                             subject: formatSubjectName(activeQuiz.subjectId),
-                            isCompleted: true
-                        });
-                    } else {
-                        filteredQuizzes.push({
-                            id: `quiz-fallback-${activeQuiz.subjectId}-${activeQuiz.currentOrderQ}`,
-                            title: `Kuis Tantangan Bab ${activeQuiz.currentOrderQ}`,
-                            subject: formatSubjectName(activeQuiz.subjectId),
+                            rawSubjectId: activeQuiz.subjectId,
                             isCompleted: true
                         });
                     }
                 });
 
-                console.log("Materi Siap Tampil:", filteredMaterials);
-                console.log("Kuis Siap Tampil (Berdasarkan timeq):", filteredQuizzes);
-                
                 setDynamicMaterials(filteredMaterials);
                 setDynamicQuizzes(filteredQuizzes);
             }
 
-            // B. Hitung peringkat asli di Leaderboard
             if (leaderboardData && leaderboardData.length > 0) {
                 const userIndex = leaderboardData.findIndex(player => player.uid === currentUser.uid);
-                if (userIndex !== -1) {
-                    setRealRank(`#${userIndex + 1}`);
-                } else {
-                    setRealRank('-');
-                }
+                setRealRank(userIndex !== -1 ? `#${userIndex + 1}` : '-');
             }
         } catch (err) {
-            console.error("Gagal memuat data path edukasi:", err);
             toast.error("Gagal memperbarui antrean belajar hari ini.");
         } finally {
             setLoading(false);
         }
     }, [currentUser, getLeaderboardData]);
 
-
     useEffect(() => {
         if (!authLoading) fetchData();
     }, [authLoading, fetchData]);
 
+    // =======================================================================
+    // 🟢 SISTEM LEVELING SESUAI TABEL & RUMUS EKSPONESIAL KOMPLEKS
+    // =======================================================================
+    const totalExp = currentUser?.exp ?? 0;
+    const dbLevel = currentUser?.level || 1; 
+
+    const calculateLevelSystem = (exp) => {
+        let level = 1;
+        let minExpForCurrentLevel = 0;
+        let baseExpNeeded = 100;
+        
+        const staticRequirements = [0, 100, 150, 220, 300, 450, 650, 900, 1200, 1600];
+        let tempExp = exp;
+
+        while (true) {
+            if (level <= 9) {
+                baseExpNeeded = staticRequirements[level];
+            } else {
+                baseExpNeeded = Math.floor(baseExpNeeded * 1.4);
+            }
+
+            if (tempExp >= baseExpNeeded) {
+                tempExp -= baseExpNeeded;
+                minExpForCurrentLevel += baseExpNeeded;
+                level++;
+            } else {
+                break;
+            }
+        }
+
+        return { 
+            level, 
+            minExp: minExpForCurrentLevel,
+            maxExp: minExpForCurrentLevel + baseExpNeeded,
+            currentProgressInLevel: tempExp,
+            baseExpNeeded
+        };
+    };
+
+    const { level: userLevel, minExp, maxExp, currentProgressInLevel, baseExpNeeded } = calculateLevelSystem(totalExp);
+    const expPercentage = Math.min(100, Math.floor((currentProgressInLevel / baseExpNeeded) * 100));
+
+    // Sinkronisasi awal tracker level
+    useEffect(() => {
+        if (!authLoading && !loading && currentUser) {
+            if (prevLevelRef.current === undefined) {
+                prevLevelRef.current = dbLevel;
+            }
+        }
+    }, [currentUser, authLoading, loading, dbLevel]);
+
+    // Reset flag kuncian mutasi jika level sinkron kembali
+    useEffect(() => {
+        if (userLevel === dbLevel) {
+            hasTriggeredRef.current = false;
+        }
+    }, [userLevel, dbLevel]);
+
+    // Hanya push level ke Firestore secara background jika hitungan level baru melampaui level database
+    useEffect(() => {
+        if (!authLoading && !loading && currentUser?.uid && userLevel > dbLevel && !hasTriggeredRef.current) {
+            if (prevLevelRef.current !== undefined && userLevel > prevLevelRef.current) {
+                hasTriggeredRef.current = true;
+                prevLevelRef.current = userLevel;
+
+                updateUserData(currentUser.uid, { level: userLevel }).catch(() => {
+                    hasTriggeredRef.current = false;
+                });
+            }
+        }
+    }, [userLevel, dbLevel, currentUser?.uid, authLoading, loading]);
+
     if (authLoading || loading) return <Spinner />;
 
     const userInitial = currentUser?.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'U';
-    const userCoins = currentUser?.koin ?? 0;
     const userBorderClass = currentUser?.activeBorder || 'borderNormal';
-
-    // =======================================================================
-    // 🟢 LOGIKA PENETAPAN LEVEL DAN KALKULASI SLIDE BAR EXP
-    // =======================================================================
-    const userLevel = currentUser?.level ?? 1;
-    const totalExp = currentUser?.exp ?? 0;
+    const userCoins = currentUser?.koin ?? 0;
     const score = currentUser?.score ?? 0;
-
-    // Batas target EXP maksimal di level saat ini (Kelipatan Level * 100)
-    const nextLevelExpTarget = userLevel * 100;
-
-    // Hitung sisa akumulasi EXP murni untuk level berjalan saja menggunakan Modulo
-    // Jika level 1, pengurang level sebelumnya adalah 0
-    const prevLevelsCombinedExp = ((userLevel - 1) * userLevel) / 2 * 100;
-    const currentLevelExpProgress = Math.max(0, totalExp - prevLevelsCombinedExp);
-
-    // Ambil persentase lebar bar (maksimal 100%)
-    const expPercentage = Math.min(100, Math.floor((currentLevelExpProgress / nextLevelExpTarget) * 100));
 
     return (
         <div className={styles.dashboardContainer}>
             
-            {/* AREA ATAS FIXED (HEADER & STATS) */}
             <div className={styles.fixedTopSection}>
                 <header className={styles.topHeader}>
                     <div className={styles.userGreet}>
@@ -274,22 +280,15 @@ const DailyPathDashboard = () => {
                         </div>
                         <div className={styles.greetTextWrapper}>
                             <h2>Halo, {currentUser?.displayName?.split(' ')[0] || 'Pelajar'} 👋</h2>
-                            
-                            {/* INDIKATOR LAYOUT LEVEL DAN SLIDE BAR EXP */}
                             <div className={styles.levelProgressContainer}>
-    <span className={styles.levelBadgeText}>Lv. {userLevel}</span>
-    <div className={styles.expTrackSliderOuter}>
-        <div 
-            className={styles.expFillSliderInner} 
-            style={{ width: `${expPercentage}%` }}
-        />
-        {/* Angka EXP sekarang ada di dalam bar */}
-        <span className={styles.expNumericIndicator}>
-            {currentLevelExpProgress}/{nextLevelExpTarget} XP
-        </span>
-    </div>
-</div>
-
+                                <span className={styles.levelBadgeText}>Lv. {userLevel}</span>
+                                <div className={styles.expTrackSliderOuter}>
+                                    <div className={styles.expFillSliderInner} style={{ width: `${expPercentage}%` }} />
+                                    <span className={styles.expNumericIndicator}>
+                                        {totalExp} / {maxExp} XP
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <button className={styles.notificationBtn} onClick={() => navigate('/leaderboard')}>
@@ -297,7 +296,6 @@ const DailyPathDashboard = () => {
                     </button>
                 </header>
 
-                {/* --- STATS ROW CARD --- */}
                 <section className={styles.statsCard}>
                     <div className={styles.statItem}>
                         <FaStar className={styles.statIconStar} />
@@ -325,34 +323,40 @@ const DailyPathDashboard = () => {
                 </section>
             </div>
 
-            {/* AREA CAROUSEL SLIDER */}
             <div className={styles.sliderOuterViewport}>
-                <div 
-                    className={styles.sliderTrackAnimated} 
-                    style={{ transform: `translateX(-${activeSliderIndex * 50}%)` }}
-                >
-                    {/* SLIDE 1: MISI PEMBELAJARAN */}
+                <div className={styles.sliderTrackAnimated} style={{ transform: `translateX(-${activeSliderIndex * 50}%)` }}>
+                    
                     <div className={styles.singleSlidePane}>
                         <div className={styles.sectionHeader}>
                             <h3>Misi Pembelajaran Terakhir</h3>
-                            <span className={styles.seeAllLink} onClick={() => navigate('/forum')}>
-                                Lihat Semua
-                            </span>
+                            <span className={styles.seeAllLink} onClick={() => navigate('/forum')}>Lihat Semua</span>
                         </div>
                         <div className={styles.dailyPathListStack}>
                             {dynamicMaterials.length > 0 ? (
                                 dynamicMaterials.map((path) => (
                                     <div 
-                                        key={path.id} 
+                                        key={path.uidchapter} 
                                         className={styles.pathChallengeCardRow}
-                                        onClick={() => handleShortcutMateriClick(path.id)}
+                                        onClick={() => {
+    // 1. Memicu mode layar penuh (Imersif) pada seluruh dokumen aplikasi
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch((err) => {
+            // Mengatasi jika browser memblokir atau ada error induksi fullscreen
+        });
+    } else if (document.documentElement.webkitRequestFullscreen) { /* Safari */
+        document.documentElement.webkitRequestFullscreen();
+    } else if (document.documentElement.msRequestFullscreen) { /* IE11 */
+        document.documentElement.msRequestFullscreen();
+    }
+
+    // 2. Lakukan navigasi halaman seperti biasa
+    navigate(`/forum/list/${path.namaMap}/${path.uidchapter}`);
+}}
                                     >
-                                        <div className={styles.pathIconBoxLeft}>
-                                            <FaBookOpen />
-                                        </div>
+                                        <div className={styles.pathIconBoxLeft}><FaBookOpen /></div>
                                         <div className={styles.quizInfo}>
                                             <h4>{path.title}</h4>
-                                            <p>{path.subject} • +{path.xpReward} EXP</p>
+                                            <p>{path.subjectDisplay} • +{path.xpReward} EXP</p>
                                         </div>
                                         <div className={styles.actionStatusZoneRight}>
                                             <FaChevronRight className={styles.arrowIcon} />
@@ -360,18 +364,24 @@ const DailyPathDashboard = () => {
                                     </div>
                                 ))
                             ) : (
-                                <div className={styles.emptyCardMini}>Belum ada riwayat materi aktif belakangan ini.</div>
+                                <div className={styles.onboardingStarterCard}>
+                                    <div className={styles.onboardingIcon}><FaRocket /></div>
+                                    <div className={styles.onboardingText}>
+                                        <h4>Perjalanan Dimulai!</h4>
+                                        <p>Pilih materi dan kumpulkan EXP pertamamu.</p>
+                                    </div>
+                                    <button className={styles.onboardingBtn} onClick={() => navigate('/forum')}>
+                                        Mulai Belajar
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>
 
-                    {/* SLIDE 2: REKOMENDASI TANTANGAN QUIZ */}
                     <div className={styles.singleSlidePane}>
                         <div className={styles.sectionHeader}>
                             <h3>Kuis Selesai Review</h3>
-                            <span className={styles.seeAllLink} onClick={() => navigate('/quiz')}>
-                                Lihat Semua
-                            </span>
+                            <span className={styles.seeAllLink} onClick={() => navigate('/quiz')}>Lihat Semua</span>
                         </div>
                         <div className={styles.dailyPathListStack}>
                             {dynamicQuizzes.length > 0 ? (
@@ -379,11 +389,9 @@ const DailyPathDashboard = () => {
                                     <div 
                                         key={quiz.id} 
                                         className={styles.pathChallengeCardRow}
-                                        onClick={handleShortcutQuizClick}
+                                        onClick={() => navigate(`/quiz/list/${quiz.rawSubjectId}/${quiz.id}`)}
                                     >
-                                        <div className={styles.pathIconBoxLeft} style={{ backgroundColor: 'rgba(22, 163, 74, 0.1)', color: '#16a34a' }}>
-                                            <FaStar />
-                                        </div>
+                                        <div className={styles.pathIconBoxLeft} style={{ backgroundColor: 'rgba(22, 163, 74, 0.1)', color: '#16a34a' }}><FaStar /></div>
                                         <div className={styles.quizInfo}>
                                             <h4>{quiz.title}</h4>
                                             <p>{quiz.subject} • <span className={styles.statusDoneTxt}>Selesai</span></p>
@@ -394,25 +402,32 @@ const DailyPathDashboard = () => {
                                     </div>
                                 ))
                             ) : (
-                                <div className={styles.emptyCardMini}>Belum ada kuis yang diulas.</div>
+                                <div className={styles.onboardingStarterCard}>
+                                    <div className={styles.onboardingIcon} style={{ background: '#fef3c7', color: '#ea580c' }}><FaGamepad /></div>
+                                    <div className={styles.onboardingText}>
+                                        <h4>Kuis Pertamamu</h4>
+                                        <p>Asah otakmu setelah menguasai materi bab.</p>
+                                    </div>
+                                    <button className={styles.onboardingBtn} style={{ background: '#ea580c' }} onClick={() => navigate('/quiz')}>
+                                        Buka Kuis
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>
+
                 </div>
 
-                {/* INDIKATOR TITIK (DOTS) DI BAWAH SLIDER */}
                 <div className={styles.sliderDotsIndicatorRow}>
                     <div className={`${styles.dotItem} ${activeSliderIndex === 0 ? styles.dotActive : ''}`} onClick={() => setActiveSliderIndex(0)} />
                     <div className={`${styles.dotItem} ${activeSliderIndex === 1 ? styles.dotActive : ''}`} onClick={() => setActiveSliderIndex(1)} />
                 </div>
             </div>
 
-            {/* MODE KOMPETISI (MABAR) */}
             <section className={styles.sectionAreaMabar}>
                 <div className={styles.sectionHeader}>
                     <h3>Mode Kompetisi (Mabar)</h3>
                 </div>
-                
                 <div className={styles.contestGrid}>
                     <div className={styles.contestCard} onClick={() => navigate('/contest/group')}>
                         <div className={styles.contestIconBg} style={{ backgroundColor: 'rgba(2, 132, 199, 0.08)' }}>
@@ -421,7 +436,6 @@ const DailyPathDashboard = () => {
                         <h4>Kontes Grup</h4>
                         <p>Mabar massal terjadwal</p>
                     </div>
-                    
                     <div className={styles.contestCard} onClick={() => navigate('/contest/1v1')}>
                         <div className={styles.contestIconBg} style={{ backgroundColor: 'rgba(217, 119, 6, 0.08)' }}>
                             <FaUser style={{ color: '#f59e0b' }} />
@@ -432,7 +446,6 @@ const DailyPathDashboard = () => {
                 </div>
             </section>
 
-            {/* MODAL TIPS INFO FULLSCREEN */}
             {showInfoModal && (
                 <div className={styles.fullscreenModalOverlay}>
                     <div className={styles.gameModalContentBox} style={{ animation: `${styles.bounceInAnim} 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards` }}>

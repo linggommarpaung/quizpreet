@@ -2,125 +2,181 @@
 
 .modalOverlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6);
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #f1f5f9;
+    z-index: 10001;
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(5px);
+    font-family: 'Poppins', sans-serif;
+    overflow: hidden; /* Mencegah sprinkle bocor */
+}
+:global([data-theme='dark']) .modalOverlay { background-color: #0f172a; }
+
+.scrollContainer {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    z-index: 10;
 }
 
-.modalContent {
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* --- KARTU UTAMA (YANG DI-SHARE) --- */
+.captureCard {
     background: #ffffff;
-    padding: 2.5rem;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    max-width: 450px;
-    width: 90%;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    position: relative;
+    padding-bottom: 24px;
+}
+:global([data-theme='dark']) .captureCard { background: #1e293b; }
+
+.cardHeader {
+    padding: 24px 20px 40px 20px;
     text-align: center;
-    font-family: 'Nunito', sans-serif;
-    border: 1px solid #e5e5e5;
-    animation: fadeIn 0.3s ease-out;
+    color: white;
 }
+.cardHeader h2 { margin: 0 0 2px 0; font-size: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+.cardHeader p { margin: 0; font-size: 0.85rem; opacity: 0.9; }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-.icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-}
-
-.modalContent h2 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 0.5rem;
-}
-
-.modalContent p {
-    font-size: 1.1rem;
-    color: #555;
-    margin-bottom: 1.5rem; /* Adjusted margin */
-    line-height: 1.5;
-}
-
-.rewards {
+/* Wrapper untuk meletakkan profil di tengah atas */
+.profileBadgeWrapper {
     display: flex;
     justify-content: center;
-    gap: 2rem;
-    margin-bottom: 1.5rem;
+    margin-top: -30px; /* Overlap dengan header */
+    margin-bottom: 10px;
 }
 
-.rewardItem {
+/* Border dinamis dari border Normal yang diingat kembali */
+.profileAvatarBox {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: white;
+    padding: 3px;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 1.5rem;
-    font-weight: 700;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border: 3px solid transparent; /* Placeholder */
+    animation: dynamicBorderPop 0.3s ease-in-out forwards;
 }
 
-.rewardItem span:first-child {
-    font-size: 2rem;
+@keyframes dynamicBorderPop {
+    to {
+        border-color: #334155; /* borderNormal yang diingat */
+    }
 }
 
-.stats {
+.profilePic {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.scoreCircleWrapper {
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.scoreCircle {
+    width: 90px;
+    height: 90px;
+    background: white;
+    border-radius: 50%;
+    border: 6px solid; /* Warna border diatur inline di JSX */
+    display: flex;
     align-items: center;
-    background-color: #f7f7f7;
+    justify-content: center;
+    font-size: 2.5rem;
+    font-weight: 800;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+:global([data-theme='dark']) .scoreCircle { background: #1e293b; }
+
+.rewardsRow {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 16px 20px 0 20px;
+}
+
+.rewardBadge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    padding: 6px 14px;
     border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 2rem;
+    border: 1px solid #e2e8f0;
+    font-weight: 700;
+    color: #334155;
+    font-size: 0.85rem;
+}
+:global([data-theme='dark']) .rewardBadge { background: #334155; border-color: #475569; color: #cbd5e1; }
+
+.iconExp { color: #f59e0b; font-size: 1.1rem; }
+.iconCoin { color: #eab308; font-size: 1.1rem; }
+
+.quoteBox {
+    margin: 16px 20px;
+    padding: 12px 14px;
+    background-color: #f8fafc;
+    border-left: 4px solid #3b82f6;
+    border-radius: 0 12px 12px 0;
+}
+:global([data-theme='dark']) .quoteBox { background-color: #0f172a; border-left-color: #60a5fa; }
+
+.quoteText { margin: 0 0 6px 0; font-size: 0.78rem; font-style: italic; color: #475569; line-height: 1.5; font-weight: 500; }
+:global([data-theme='dark']) .quoteText { color: #cbd5e1; }
+
+.quoteAuthor { display: block; text-align: right; font-size: 0.7rem; font-weight: 700; color: #3b82f6; }
+:global([data-theme='dark']) .quoteAuthor { color: #60a5fa; }
+
+/* --- TOMBOL AKSI --- */
+.actionButtonsRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
 }
 
-.statItem {
+.btnSecondary, .btnPrimary, .btnShare {
     display: flex;
     flex-direction: column;
     align-items: center;
-    font-size: 1rem;
-    color: #666;
-}
-
-.statValue {
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin-top: 0.25rem;
-}
-
-.statValue.correct {
-    color: #58cc02;
-}
-
-.statValue.incorrect {
-    color: #e53e3e;
-}
-
-.closeButton {
-    background-color: #58cc02;
-    color: white;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
     border: none;
-    padding: 1rem 2rem;
-    font-size: 1.1rem;
+    border-radius: 14px;
     font-weight: 700;
-    border-radius: 12px;
+    font-size: 0.72rem;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.2s ease;
-    width: 100%;
-    border-bottom: 4px solid #4aa602;
+    transition: transform 0.1s;
 }
+.btnSecondary:active, .btnPrimary:active, .btnShare:active { transform: scale(0.95); }
 
-.closeButton:hover {
-    background-color: #4aa602;
-    transform: translateY(-2px);
-}
+.btnSecondary { background: #e2e8f0; color: #475569; }
+:global([data-theme='dark']) .btnSecondary { background: #334155; color: #cbd5e1; }
 
-.rewardsInfo span {
-    margin: 0 10px;
-}
+.btnPrimary { background: #2563eb; color: white; }
+.btnShare { background: #10b981; color: white; transition: background-color 0.2s; }
+
+.sharingActive { background-color: #94a3b8; cursor: not-allowed; }
+.spinIcon { animation: spin 1s linear infinite; font-size: 1.1rem; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.btnSecondary svg, .btnPrimary svg, .btnShare svg { font-size: 1.1rem; }

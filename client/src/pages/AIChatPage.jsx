@@ -7,7 +7,7 @@ import styles from './AIChatPage.module.css';
 
 // Struktur Data untuk Pesan Chat
 const initialMessages = [
-    { type: 'ai', text: 'Halo! Saya adalah AI Edukasi QuizPreet. Tanyakan materi pelajaran apa saja, seperti Matematika, Sejarah, atau Bahasa Inggris!' },
+    { type: 'ai', text: 'Halo! Saya adalah AI Edukasi QuizPride. Tanyakan materi pelajaran apa saja, seperti Matematika, Sejarah, atau Bahasa Inggris!' },
 ];
 
 const AIChatPage = () => {

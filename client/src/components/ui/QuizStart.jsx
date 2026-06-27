@@ -2,27 +2,32 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../config/firebaseConfig';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import styles from './QuizStart.module.css';
-import { FaClock, FaCheck, FaArrowLeft, FaArrowRight, FaSpinner } from 'react-icons/fa6';
+import { FaClock, FaSpinner, FaTriangleExclamation } from 'react-icons/fa6';
+import QuizCompletionModal from './QuizCompletionModal';
 
 const QuizStart = () => {
-  // Ambil parameter dari URL
+  const { currentUser } = useAuth();
   const { mapelId, quizId } = useParams();
   const navigate = useNavigate();
 
   const [quizData, setQuizData] = useState(null);
   const [loading, setLoading] = useState(true);
-
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(0); 
+  const [timeLeft, setTimeLeft] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
+  
   const [finalScore, setFinalScore] = useState(0);
+  const [rewards, setRewards] = useState({ exp: 0, coins: 0 });
 
-  // FETCH DATA KUIS SPESIFIK DARI FIRESTORE BERDASARKAN URL
+  // 1. FETCH DATA KUIS
   useEffect(() => {
     const fetchQuizData = async () => {
       try {
@@ -32,7 +37,6 @@ const QuizStart = () => {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setQuizData(data);
-          // Set waktu 60 detik per soal berdasarkan data yang di-fetch
           setTimeLeft((data.units?.length || 0) * 60);
         } else {
           toast.error("Data kuis tidak ditemukan!");
@@ -40,177 +44,246 @@ const QuizStart = () => {
         }
       } catch (error) {
         console.error("Gagal mengambil kuis:", error);
-        toast.error("Terjadi kesalahan saat memuat kuis.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchQuizData();
   }, [quizId, mapelId, navigate]);
 
-  const units = quizData?.units || [];
-  const totalQuestions = units.length;
-  const currentQuestion = units[currentIdx];
-
-  // Timer Hitung Mundur (Berjalan setelah loading selesai)
+  // 2. SISTEM FULLSCREEN & ANTI KELUAR
   useEffect(() => {
-    if (loading || !quizData) return;
+    if (loading || !quizData || isFinished) return;
+
+    // Paksa masuk layar penuh
+    const enterFullscreen = async () => {
+      try {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) await elem.requestFullscreen();
+      } catch (err) {
+        console.log("Auto-fullscreen diblokir browser, abaikan.");
+      }
+    };
+    enterFullscreen();
+
+    const handleFullscreenChange = () => {
+      // Jika keluar dari layar penuh secara paksa (tekan ESC / tombol back HP)
+      if (!document.fullscreenElement && !isFinished) {
+        setIsPaused(true);
+        setShowExitModal(true);
+      }
+    };
+
+    // Cegah tombol back browser/HP
+    const handlePopState = (e) => {
+      if (!isFinished) {
+        window.history.pushState(null, null, window.location.pathname);
+        setIsPaused(true);
+        setShowExitModal(true);
+      }
+    };
+
+    window.history.pushState(null, null, window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
+  }, [isFinished, loading, quizData]);
+
+  // 3. TIMER HITUNG MUNDUR (Berhenti jika dipause)
+  useEffect(() => {
+    if (loading || !quizData || isFinished || isPaused) return;
     
-    if (isFinished || timeLeft <= 0) {
-      if (timeLeft <= 0 && !isFinished) handleFinish();
+    if (timeLeft <= 0) {
+      handleFinish();
       return;
     }
     const timerId = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
     return () => clearInterval(timerId);
-  }, [timeLeft, isFinished, loading, quizData]);
+  }, [timeLeft, isFinished, loading, quizData, isPaused]);
 
   const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+    const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
+    return `${h}:${m}:${s}`;
   };
+
+  const units = quizData?.units || [];
+  const currentQuestion = units[currentIdx];
+  const totalQuestions = units.length;
+  const answeredCount = Object.keys(answers).length;
 
   const handleSelectOption = (optIndex) => {
     setAnswers(prev => ({ ...prev, [currentIdx]: optIndex }));
   };
 
-  const handleFinish = () => {
+  const handleNext = () => {
+    if (currentIdx < totalQuestions - 1) {
+      setCurrentIdx(prev => prev + 1);
+    } else {
+      handleFinish();
+    }
+  };
+
+  // 4. LOGIKA SELESAI & PEMBERIAN REWARD
+  const handleFinish = async () => {
     let score = 0;
     units.forEach((u, idx) => {
       if (answers[idx] === u.correctAnswer) score++;
     });
-    setFinalScore(Math.round((score / totalQuestions) * 100));
+    
+    const calcScore = Math.round((score / totalQuestions) * 100);
+    setFinalScore(calcScore);
+
+    // Hitung reward dinamis
+    const earnedExp = Math.round(calcScore * 0.5); // Contoh: Skor 100 dapet 50 EXP
+    const earnedCoins = calcScore >= 80 ? 10 : (calcScore >= 50 ? 5 : 2); // Koin tergantung KKM
+    setRewards({ exp: earnedExp, coins: earnedCoins });
+
     setIsFinished(true);
+    setIsPaused(true);
+
+    // Otomatis keluar layar penuh saat selesai
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+
+    // Tembak data ke Firestore
+    if (currentUser?.uid) {
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, {
+          exp: increment(earnedExp),
+          koin: increment(earnedCoins)
+        });
+      } catch (err) {
+        console.error("Gagal menyimpan progress ujian:", err);
+      }
+    }
   };
 
-  // Fungsi untuk kembali ke halaman list mapel
-  const handleExitQuiz = () => {
+  // AKSI MODAL KELUAR
+  const confirmExitQuiz = () => {
     navigate(`/quiz/list/${mapelId}`);
   };
 
-  const labelAlphabet = ['A', 'B', 'C', 'D', 'E'];
+  const cancelExitQuiz = async () => {
+    setShowExitModal(false);
+    try {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) await elem.requestFullscreen();
+    } catch (e) {}
+    setIsPaused(false); // Lanjut timer
+  };
 
   // LAYAR LOADING
   if (loading) {
     return (
-      <div className={styles.unbkFullscreenOverlay} style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <FaSpinner className="fa-spin" style={{ fontSize: '3rem', color: '#3b82f6', marginBottom: '10px' }} />
-        <h3 style={{ color: '#64748b' }}>Menyiapkan Lembar Ujian...</h3>
+      <div className={styles.loadingScreen}>
+        <FaSpinner className={styles.spinIcon} />
+        <p>Memuat Soal...</p>
       </div>
     );
   }
 
-  if (!quizData) return null;
-
-  // LAYAR HASIL AKHIR
+  // LAYAR HASIL AKHIR (Memanggil Komponen Baru)
   if (isFinished) {
     return (
-      <div className={styles.unbkFullscreenOverlay} style={{ justifyContent: 'center' }}>
-        <div className={styles.resultCardBox}>
-          <h2>Ujian Selesai!</h2>
-          <p>Tantangan <strong>{quizData.theme}</strong> telah berhasil diselesaikan.</p>
-          <div className={styles.scoreCircleDisplay}>
-            <h1>{finalScore}</h1>
-          </div>
-          <button className={styles.btnFinishExit} onClick={handleExitQuiz}>Kembali ke Menu Utama</button>
-        </div>
-      </div>
+      <QuizCompletionModal 
+        isOpen={isFinished}
+        score={finalScore}
+        themeName={quizData?.theme}
+        earnedExp={rewards.exp}
+        earnedCoins={rewards.coins}
+        onBack={() => navigate(`/quiz`)}
+        onContinue={() => navigate(`/quiz/list/${mapelId}`)}
+      />
     );
   }
 
-  // LAYAR UJIAN UNBK
   return (
-    <div className={styles.unbkFullscreenOverlay}>
-      <div className={styles.unbkHeaderBar}>
-        <div className={styles.headerLeftLogo}>
-          <h3>Quizpreet <span>UNBK Mode</span></h3>
+    <div className={styles.quizMainContainer}>
+      {/* HEADER BIRU */}
+      <header className={styles.quizHeader}>
+        <div className={styles.headerInfo}>
+          <p className={styles.answeredStats}>Soal Terjawab/Total: {answeredCount} / {totalQuestions}</p>
+          <h2 className={styles.questionNavTitle}>Pertanyaan {currentIdx + 1} dari {totalQuestions}</h2>
         </div>
-        <div className={styles.headerCenterTitle}>
-          {quizData.theme} (Bab {quizData.themeNumber})
+        <div className={styles.timerBadge}>
+          {formatTime(timeLeft)}
         </div>
-        <div className={styles.headerRightTimer}>
-          <FaClock /> Sisa Waktu: <strong>{formatTime(timeLeft)}</strong>
+      </header>
+
+      {/* BODY KONTEN */}
+      <main className={styles.quizBody}>
+        <div className={styles.questionText}>
+          {currentQuestion?.text}
         </div>
-      </div>
 
-      <div className={styles.unbkBodyContainer}>
-        {/* PANEL KIRI: SOAL & JAWABAN */}
-        <div className={styles.questionPanelArea}>
-          <div className={styles.questionHeader}>
-            <div className={styles.nomorSoalBadge}>Soal No. {currentIdx + 1}</div>
+        {currentQuestion?.image && (
+          <div className={styles.imageContainer}>
+            <img src={currentQuestion.image} alt="Visual Soal" />
           </div>
-          
-          <div className={styles.questionTextContent}>
-            {currentQuestion?.text}
-          </div>
+        )}
 
-          <div className={styles.optionsListContainer}>
-            {currentQuestion?.options?.map((opt, optIdx) => {
-              const isSelected = answers[currentIdx] === optIdx;
-              return (
-                <div 
-                  key={optIdx} 
-                  className={`${styles.optionRowItem} ${isSelected ? styles.optionSelected : ''}`}
-                  onClick={() => handleSelectOption(optIdx)}
-                >
-                  <div className={styles.alphabetCircle}>{labelAlphabet[optIdx]}</div>
-                  <div className={styles.optionTextData}>{opt}</div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* NAVIGASI BAWAH */}
-          <div className={styles.bottomNavActions}>
-            <button 
-              className={styles.navBtnSecondary} 
-              disabled={currentIdx === 0} 
-              onClick={() => setCurrentIdx(p => p - 1)}
+        <div className={styles.optionsList}>
+          {currentQuestion?.options?.map((opt, idx) => (
+            <label 
+              key={idx} 
+              className={`${styles.optionItem} ${answers[currentIdx] === idx ? styles.activeOption : ''}`}
             >
-              <FaArrowLeft /> Soal Sebelumnya
-            </button>
-            
-            {currentIdx === totalQuestions - 1 ? (
-              <button className={styles.navBtnFinish} onClick={handleFinish}>
-                <FaCheck /> Selesai Ujian
-              </button>
-            ) : (
-              <button 
-                className={styles.navBtnPrimary} 
-                onClick={() => setCurrentIdx(p => p + 1)}
-              >
-                Soal Berikutnya <FaArrowRight />
-              </button>
-            )}
-          </div>
+              <input 
+                type="radio" 
+                name="quiz-opt" 
+                checked={answers[currentIdx] === idx} 
+                onChange={() => handleSelectOption(idx)}
+                className={styles.hiddenRadio}
+              />
+              <span className={styles.customRadioCircle}></span>
+              <span className={styles.optionLabelText}>{opt}</span>
+            </label>
+          ))}
         </div>
+      </main>
 
-        {/* PANEL KANAN: GRID NAVIGASI SOAL */}
-        <div className={styles.gridNavPanelArea}>
-          <div className={styles.gridHeader}>Navigasi Soal</div>
-          <div className={styles.gridNumbersWrapper}>
-            {units.map((_, idx) => {
-              const hasAnswered = answers[idx] !== undefined;
-              const isCurrent = currentIdx === idx;
-              return (
-                <div 
-                  key={idx} 
-                  className={`
-                    ${styles.gridBoxItem} 
-                    ${hasAnswered ? styles.gridAnswered : ''} 
-                    ${isCurrent ? styles.gridActiveCurrent : ''}
-                  `}
-                  onClick={() => setCurrentIdx(idx)}
-                >
-                  {idx + 1}
-                </div>
-              );
-            })}
+      {/* FOOTER ACTION */}
+      <footer className={styles.quizFooter}>
+        <button 
+          className={styles.btnSkip} 
+          onClick={() => currentIdx > 0 && setCurrentIdx(prev => prev - 1)}
+          disabled={currentIdx === 0}
+        >
+          {currentIdx === 0 ? '---' : 'KEMBALI'}
+        </button>
+        <button 
+          className={styles.btnSubmit} 
+          onClick={handleNext}
+        >
+          {currentIdx === totalQuestions - 1 ? 'SELESAI' : 'JAWAB'}
+        </button>
+      </footer>
+
+      {/* MODAL KONFIRMASI KELUAR */}
+      {showExitModal && (
+        <div className={styles.modalWarningOverlay}>
+          <div className={styles.modalWarningCard}>
+            <FaTriangleExclamation className={styles.warningIcon} />
+            <h3>Yakin Ingin Keluar?</h3>
+            <p>Waktu kuis sedang dihentikan sementara. Jika kamu keluar, progres kuis ini tidak akan disimpan.</p>
+            <div className={styles.modalActionGroup}>
+              <button className={styles.btnWarningExit} onClick={confirmExitQuiz}>Keluar</button>
+              <button className={styles.btnWarningResume} onClick={cancelExitQuiz}>Lanjut Kuis</button>
+            </div>
           </div>
-          <button className={styles.forceFinishBtn} onClick={handleFinish}>Hentikan & Kumpulkan</button>
         </div>
-      </div>
+      )}
     </div>
   );
 };
