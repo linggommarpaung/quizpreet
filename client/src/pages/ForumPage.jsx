@@ -14,11 +14,12 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// IMPORT SUB-KOMPONEN UI (MINIULANGAN SUDAH DI-REMOVE & DISATUKAN KE LATIHAN SOAL)
+// IMPORT UTAMA DARI STRUKTUR LAMA KAMU
 import ChapterList from '../components/ui/ChapterList';
 import PdfMateriReader from '../components/ui/PdfMateriReader';
 import LatihanSoalSection from '../components/ui/LatihanSoalSection';
 import ChatDashboardSection from '../components/ui/ChatDashboardSection';
+import Spinner from '../components/ui/Spinner'; // Pastikan Spinner di-import agar tidak crash!
 
 import { 
   FaPaperPlane, 
@@ -80,9 +81,10 @@ const ForumPage = () => {
   const chatEndRef = useRef(null);
 
   const [allChapters, setAllChapters] = useState([]);
+  const [globalLoading, setGlobalLoading] = useState(true); // Mencegah bypass kedip layar
   
-  const getChapterCount = (subjectId) => {
-    return allChapters.filter(ch => ch.subjectId === subjectId).length;
+  const getChapterCount = (subId) => {
+    return allChapters.filter(ch => ch.subjectId === subId).length;
   };
 
   const subjectsData = [
@@ -93,6 +95,7 @@ const ForumPage = () => {
     { id: 'indonesia', name: 'Bahasa Indonesia', icon: <FaFont />, totalChapters: getChapterCount('indonesia') }
   ];
 
+  // Efek status online global
   useEffect(() => {
     if (!currentUser?.uid) return;
     const userDocRef = doc(db, 'users', currentUser.uid);
@@ -108,8 +111,27 @@ const ForumPage = () => {
       }).catch((err) => console.error("Gagal update status offline global:", err));
     };
   }, [currentUser?.uid]);
-  
+
+  // Load awal data seluruh bab dari Firestore
   useEffect(() => {
+    const fetchAllChaptersForCount = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'chapters'));
+        const chapterList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setAllChapters(chapterList);
+      } catch (error) {
+        console.error("Gagal menarik data bab untuk dihitung:", error);
+      } finally {
+        setGlobalLoading(false);
+      }
+    };
+    fetchAllChaptersForCount();
+  }, []);
+
+  // VALIDASI UTAMA KEAMANAN TEMBAK URL BYPASS BAB
+  useEffect(() => {
+    if (globalLoading || allChapters.length === 0) return;
+
     // Kasus 1: Jika tidak ada subjectId di URL (Akses /forum utama)
     if (!subjectId) {
       setSelectedSubject(null);
@@ -131,33 +153,91 @@ const ForumPage = () => {
     // Kasus 2: Jika ada subjectId tapi TIDAK ADA chapterId (Akses /forum/list/mtk)
     if (!chapterId) {
       setSelectedChapter(null);
-      setFullscreenLevel(1); // Set ke tampilan list bab
+      setFullscreenLevel(1); 
       
-      // Jika keluar dari full screen browser saat kembali ke list bab
       if (document.fullscreenElement || document.webkitFullscreenElement) {
         document.exitFullscreen().catch((err) => console.log(err));
       }
       return;
     }
 
-    // Kasus 3: Jika ada subjectId DAN ada chapterId (Akses /forum/list/mtk/uid_chapter)
-    // Tunggu sampai data allChapters terisi dari Firestore
-    if (allChapters.length > 0) {
-      const foundChapter = allChapters.find(ch => ch.id === chapterId);
+    // Kasus 3: Jika ada subjectId DAN ada chapterId (User nembak rute spesifik)
+    const foundChapter = allChapters.find(ch => ch.id === chapterId);
+    
+    if (foundChapter) {
+      const targetOrder = Number(foundChapter.order || 0);
       
-      if (foundChapter) {
-        setSelectedChapter(foundChapter);
-        setFullscreenLevel(2); // Set langsung ke tampilan belajar/ujian
-        
-        // Opsional: Otomatis aktifkan pembaca PDF dari halaman pertama jika rute berubah
-        // setPdfPage(1); 
-      } else {
-        toast.error("Bab materi tidak ditemukan");
-        navigate(`/forum/list/${subjectId}`);
+      // SISTEM VALIDASI KEAMANAN URL BYPASS
+      // Jika order bab yang dibuka lebih tinggi dari progres maksimal + 1 bab yang diunlock (jika bab 1 siap, maka bab 2 unlock (maxCompletedOrder + 1))
+      if (maxCompletedOrder > 0 && targetOrder > (maxCompletedOrder + 1)) {
+        toast.error("Eitss Gak Bisa ya! Selesaikan bab sebelumnya dulu!");
+        navigate(`/forum/list/${subjectId}`); // Kick kembali ke daftar bab
+        return;
       }
-    }
-  }, [subjectId, chapterId, allChapters]); 
 
+      setSelectedChapter(foundChapter);
+      setFullscreenLevel(2); 
+    } else {
+      toast.error("Bab materi tidak ditemukan");
+      navigate(`/forum/list/${subjectId}`);
+    }
+  }, [subjectId, chapterId, allChapters, maxCompletedOrder, globalLoading]); 
+
+  // Ambil data progres belajar pengguna secara realtime / berkala
+  useEffect(() => {
+    const fetchUserProgress = async () => {
+      if (!currentUser?.uid || !selectedSubject) return;
+      try {
+        const progressRef = doc(db, "userProgress", currentUser.uid);
+        const progressSnap = await getDoc(progressRef);
+        if (progressSnap.exists()) {
+          const data = progressSnap.data();
+          const mapelProgress = data[selectedSubject.id];
+          if (mapelProgress && mapelProgress.order !== undefined) {
+            setMaxCompletedOrder(Number(mapelProgress.order));
+          } else {
+            setMaxCompletedOrder(0);
+          }
+        } else {
+          setMaxCompletedOrder(0);
+        }
+      } catch (err) {
+        console.error("Gagal mengambil progres belajar:", err);
+      }
+    };
+    fetchUserProgress();
+  }, [currentUser, selectedSubject]);
+
+  // Tarik daftar bab berdasarkan mapel aktif
+  useEffect(() => {
+    const fetchChaptersFromFirestore = async (subId) => {
+      setLoadingChapters(true);
+      try {
+        const q = query(collection(db, 'chapters'), where('subjectId', '==', subId));
+        const querySnapshot = await getDocs(q);
+        const fetchedChapters = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        fetchedChapters.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+        setChapters(fetchedChapters);
+      } catch (error) {
+        console.error("Error loading chapters:", error);
+      } finally {
+        setLoadingChapters(false);
+      }
+    };
+
+    if (selectedSubject) {
+      fetchChaptersFromFirestore(selectedSubject.id);
+    }
+  }, [selectedSubject]);
+
+  useEffect(() => {
+    if (selectedChapter) {
+      const currentOrder = Number(selectedChapter.order || 0);
+      setHasCompletedThisChapterBefore(currentOrder <= maxCompletedOrder);
+    }
+  }, [selectedChapter, maxCompletedOrder]);
+
+  // Listener Chat Realtime
   useEffect(() => {
     if (activeTab !== 'chat') return;
     const chatQuery = query(collection(db, 'global_chats'), orderBy('createdAt', 'asc'));
@@ -166,7 +246,6 @@ const ForumPage = () => {
       setChatMessages(messages);
     }, (error) => {
       console.error("Error listen chat:", error);
-      toast.error("Gagal memuat obrolan realtime");
     });
     return () => unsubscribe();
   }, [activeTab]);
@@ -192,22 +271,8 @@ const ForumPage = () => {
       await addDoc(collection(db, 'global_chats'), msgData);
     } catch (err) {
       console.error("Error sending chat:", err);
-      toast.error("Gagal mengirim pesan");
     }
   };
-
-  useEffect(() => {
-    const fetchAllChaptersForCount = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'chapters'));
-        const chapterList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setAllChapters(chapterList);
-      } catch (error) {
-        console.error("Gagal menarik data bab untuk dihitung:", error);
-      }
-    };
-    fetchAllChaptersForCount();
-  }, []);
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -215,59 +280,7 @@ const ForumPage = () => {
     }
   }, [chatMessages, activeTab]);
 
-  const fetchChaptersFromFirestore = async (subjectId) => {
-    setLoadingChapters(true);
-    try {
-      const q = query(collection(db, 'chapters'), where('subjectId', '==', subjectId));
-      const querySnapshot = await getDocs(q);
-      const fetchedChapters = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      fetchedChapters.sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
-      setChapters(fetchedChapters);
-    } catch (error) {
-      console.error("Error loading chapters:", error);
-      toast.error("Gagal mengambil data bab.");
-    } finally {
-      setLoadingChapters(false);
-    }
-  };
-
-  useEffect(() => {
-    const fetchUserProgress = async () => {
-      if (!currentUser?.uid || !selectedSubject) return;
-      try {
-        const progressRef = doc(db, "userProgress", currentUser.uid);
-        const progressSnap = await getDoc(progressRef);
-        if (progressSnap.exists()) {
-          const data = progressSnap.data();
-          const mapelProgress = data[selectedSubject.id];
-          if (mapelProgress && mapelProgress.order !== undefined) {
-            setMaxCompletedOrder(Number(mapelProgress.order));
-          } else {
-            setMaxCompletedOrder(0);
-          }
-        } else {
-          setMaxCompletedOrder(0);
-        }
-      } catch (err) {
-        console.error("Gagal mengambil progres belajar:", err);
-      }
-    };
-    fetchUserProgress();
-  }, [currentUser, selectedSubject, activeMateriSubTab]);
-
-  useEffect(() => {
-    if (selectedChapter) {
-      const currentOrder = Number(selectedChapter.order || 0);
-      setHasCompletedThisChapterBefore(currentOrder <= maxCompletedOrder);
-    }
-  }, [selectedChapter, maxCompletedOrder]);
-
-  useEffect(() => {
-    if (selectedSubject) {
-      fetchChaptersFromFirestore(selectedSubject.id);
-    }
-  }, [selectedSubject]);
-
+  // Menyembunyikan Navbar Utama & Footer layout bawaan saat full screen pembelajaran
   useEffect(() => {
     const mainNavbar = document.querySelector('header');
     const bottomNav = document.querySelector('footer');
@@ -284,6 +297,7 @@ const ForumPage = () => {
     };
   }, [fullscreenLevel]);
 
+  // Mengatur Timer Kuncian Halaman Pembaca PDF Modul Bacaan
   useEffect(() => {
     if (activeTab === 'materi' && selectedChapter && activeMateriSubTab === 'pdf') {
       if (hasCompletedThisChapterBefore) {
@@ -323,31 +337,27 @@ const ForumPage = () => {
     }
   }, [pdfPage, selectedChapter, activeMateriSubTab, activeTab, pageTimers, unlockedPages, hasCompletedThisChapterBefore]);
 
+  // Deteksi Perubahan Kunci Fullscreen Esc Perangkat
   useEffect(() => {
-  const handleFullscreenChange = () => {
-    // Jika layar penuh mati AND level saat ini masih di dalam materi/ujian (level 2)
-    if (!document.fullscreenElement && !document.webkitFullscreenElement && fullscreenLevel === 2) {
-      
-      // 🟢 JIKA KELUARNYA SAH (Klik tombol List Bab setelah ujian selesai), JANGAN MUNCULKAN MODAL KELUAR!
-      if (isExitingSafely) {
-        setIsExitingSafely(false); // Reset kembali state-nya
-        return;
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement && fullscreenLevel === 2) {
+        if (isExitingSafely) {
+          setIsExitingSafely(false); 
+          return;
+        }
+        setShowExitModal(true);
       }
+    };
 
-      // Jika keluarnya tidak sengaja (pencet ESC / back), baru munculkan modal peringatan
-      setShowExitModal(true);
-    }
-  };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, [fullscreenLevel, isExitingSafely]);
 
-  document.addEventListener('fullscreenchange', handleFullscreenChange);
-  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-  return () => {
-    document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-  };
-}, [fullscreenLevel, isExitingSafely]); // Tambahkan isExitingSafely ke dependency array
-
-  
+  // Efek Timer Hitung Mundur Lembaran Ujian
   useEffect(() => {
     let interval;
     if (activeMateriSubTab === 'ulangan' && isUjianStarted && ujianTimer > 0 && !showUjianResultModal) {
@@ -364,12 +374,13 @@ const ForumPage = () => {
     }
     return () => clearInterval(interval);
   }, [isUjianStarted, ujianTimer, activeMateriSubTab, showUjianResultModal]);
-
+  
   const formatUjianTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+  const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
+};
 
   const handleFinishUjian = async (isTimeUp = false) => {
     const soalList = selectedChapter.miniUlangan || [];
@@ -418,7 +429,6 @@ const ForumPage = () => {
         }
       } catch (err) {
         console.error("Gagal mengupdate reward ke database:", err);
-        toast.error("Gagal memperbarui progres kuncian.");
       }
     }
     setShowUjianResultModal(true);
@@ -442,7 +452,6 @@ const ForumPage = () => {
             await navigator.share({ files: [fileData], title: 'Hasil Mini Ulangan Quizpride', text: captionText });
             toast.success("Berhasil di bagikan!", { id: 'share-load' });
           } catch (shareErr) {
-            console.log("Share dibatalkan atau terkendala:", shareErr);
             toast.dismiss('share-load');
           }
         } else {
@@ -455,12 +464,11 @@ const ForumPage = () => {
             link.href = imageUri;
             link.download = `Hasil_Ujian_${selectedChapter.order}.png`;
             link.click();
-            toast.success("Gawai tidak mendukung share langsung. Gambar berhasil di-download!", { id: 'share-load' });
+            toast.success("Gambar berhasil di-download!", { id: 'share-load' });
           }
         }
       }, "image/png");
     } catch (err) {
-      console.error(err);
       toast.error("Gagal memproses share sistem.", { id: 'share-load' });
     }
   };
@@ -469,20 +477,13 @@ const ForumPage = () => {
   
   const confirmExitChapter = () => {
     setShowExitModal(false);
-    // Kembalikan URL ke list mapel utama
     navigate(`/forum/list/${subjectId}`);
   };
 
-  const handleBackFromSubject = () => {
-    navigate('/forum'); 
-  };
-
-  const handleSelectSubject = (sub) => {
-    navigate(`/forum/list/${sub.id}`);
-  };
+  const handleBackFromSubject = () => { navigate('/forum'); };
+  const handleSelectSubject = (sub) => { navigate(`/forum/list/${sub.id}`); };
 
   const handleSelectChapter = (ch) => {
-    // Reset state utilitas materi internal
     setPdfPage(1);
     setNumPages(null);
     setPageTimers({ 1: 10 });
@@ -492,10 +493,8 @@ const ForumPage = () => {
     setShowPembahasan({});
     setCurrentLatihanIdx(0);
 
-    // Pemicu utama: Pindah URL! State fullscreenLevel & selectedChapter diatur otomatis oleh useEffect rute
     navigate(`/forum/list/${subjectId}/${ch.id}`);
 
-    // Tetap pertahankan request full screen browser jika diinginkan
     const element = document.documentElement;
     if (element.requestFullscreen) {
       element.requestFullscreen().catch((err) => console.log(err));
@@ -510,6 +509,10 @@ const ForumPage = () => {
     if(option === correct) toast.success("Jawaban Benar!");
     else toast.error("Coba baca pembahasannya yuk!");
   };
+
+  if (globalLoading) {
+    return <Spinner />;
+  }
 
   return (
     <div className={`${styles.forumWrapperPage} ${fullscreenLevel >= 1 ? styles.fullscreenOverlayMode : ''}`}>
@@ -620,10 +623,9 @@ const ForumPage = () => {
                       />
                     )}
 
-                    {/* SEKARANG SECTION LATIHAN & ULANGAN DITANGANI COMPONENT YANG SAMA */}
                     {(activeMateriSubTab === 'latihan' || activeMateriSubTab === 'ulangan') && (
                       <LatihanSoalSection 
-                      setIsExitingSafely={setIsExitingSafely}
+                        setIsExitingSafely={setIsExitingSafely}
                         activeMateriSubTab={activeMateriSubTab}
                         setActiveMateriSubTab={setActiveMateriSubTab}
                         latihanSoal={selectedChapter.latihanSoal}
@@ -693,7 +695,7 @@ const ForumPage = () => {
                   setShowExitModal(false);
                   if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                     const element = document.documentElement;
-                    if (element.requestFullscreen) element.requestFullscreen().catch((err) => console.log(err));
+                    if (element.requestFullscreen) element.requestFullscreen().catch(() => {});
                   }
                 }}
               >

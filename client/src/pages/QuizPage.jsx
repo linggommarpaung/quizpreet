@@ -1,27 +1,31 @@
 // client/src/pages/QuizPage.jsx
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import styles from './QuizPage.module.css';
-import { toast } from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast'; 
 import { useAuth } from '../contexts/AuthContext';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 import { 
   FaStar, FaFire, FaChevronRight, FaArrowLeft,
   FaCalculator, FaFlask, FaEarthAsia, FaLanguage,      
-  FaSpinner, FaFont
+  FaSpinner, FaFont, FaLock 
 } from 'react-icons/fa6';
 
 const QuizPage = () => {
   const { currentUser } = useAuth();
   const { mapelId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // --- STATE DATA FIREBASE & KUIS ---
   const [allQuizzes, setAllQuizzes] = useState([]);
   const [filteredQuizzes, setFilteredQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Nilai default 0 (Berarti belum ada paket yang selesai, hanya paket 1 yang terbuka)
+  const [completedOrder, setCompletedOrder] = useState(0);
   
   const toggleFullscreen = (enter) => {
     const elem = document.documentElement;
@@ -32,35 +36,61 @@ const QuizPage = () => {
     }
   };
 
-
-  // Fungsi navigasi kembali
   const handleGoBack = () => {
-    toggleFullscreen(false); // Matikan dulu sebelum pindah
+    toggleFullscreen(false);
     navigate(`/quiz`);
   };
 
-  // FETCH DATA
+  // FETCH DATA KUIS & KUNCIAN PROGRESS USER
   useEffect(() => {
-    const fetchQuizzes = async () => {
+    const fetchQuizzesAndProgress = async () => {
       try {
         setLoading(true);
+
+        let currentCompleted = 0; // Default 0 jika user baru / belum ada progress
+        
+        // Ambil data dari: userProgress/[uid] -> [mapelId] -> orderq
+        if (currentUser?.uid && mapelId) {
+          const progressRef = doc(db, 'userProgress', currentUser.uid);
+          const progressSnap = await getDoc(progressRef);
+          
+          if (progressSnap.exists()) {
+            const dataProgress = progressSnap.data();
+            if (dataProgress[mapelId] && dataProgress[mapelId].orderq !== undefined) {
+              currentCompleted = Number(dataProgress[mapelId].orderq || 0);
+            }
+          }
+        }
+        setCompletedOrder(currentCompleted);
+
+        // Ambil paket kuis dari dailyPaths
         const querySnapshot = await getDocs(collection(db, 'dailyPaths'));
         const quizList = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
         setAllQuizzes(quizList);
+
       } catch (err) {
-        console.error("Error fetching quizzes:", err);
-        toast.error("Gagal memuat data paket kuis.");
+        console.error("Error fetching quizzes and progress:", err);
+        toast.error("Gagal memuat data kuis.");
       } finally {
         setLoading(false);
       }
     };
-    fetchQuizzes();
-  }, []);
+    fetchQuizzesAndProgress();
+  }, [mapelId, currentUser]);
+  
+  useEffect(() => {
+    if (location.state?.errorMsg) {
+      // Munculkan toast setelah halaman list benar-benar siap mrender
+      toast.error(location.state.errorMsg);
+      
+      // Bersihkan state di URL biar kalau di-refresh, toast-nya gak muncul lagi
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
-  // FUNGSI MENGHITUNG JUMLAH KUIS
   const getQuizCount = (id) => allQuizzes.filter(quiz => quiz.mapel === id).length;
 
   const subjectsData = [
@@ -71,34 +101,43 @@ const QuizPage = () => {
     { id: 'indonesia', name: 'Bahasa Indonesia', icon: <FaFont />, totalQuizzes: getQuizCount('indonesia'), color: '#8b5cf6' }
   ];
 
-  // EFFECT UNTUK MENANGANI ROUTING URL /page/list/:mapelId
   useEffect(() => {
     if (mapelId && allQuizzes.length > 0) {
       const matches = allQuizzes
         .filter(quiz => quiz.mapel === mapelId)
         .sort((a, b) => Number(a.themeNumber || 0) - Number(b.themeNumber || 0));
+      
       setFilteredQuizzes(matches);
     }
   }, [mapelId, allQuizzes]);
 
   const handleSelectSubject = (subject) => {
-    // Navigasi ke URL baru sesuai permintaanmu
     navigate(`/quiz/list/${subject.id}`);
   };
 
-  const handleStartQuiz = (quizData) => {
+  // 🔒 LINK BYPASS PROTECTION FUNCTION
+  const handleStartQuiz = (quizData, targetIndex) => {
+    if (targetIndex > completedOrder) {
+      toast.error("🔒 Kuis ini masih terkunci! Selesaikan kuis bab sebelumnya.");
+      return;
+    }
     navigate(`/quiz/list/${mapelId}/${quizData.id}`);
   };
 
-
-  // Cek apakah sedang di mode List (ada mapelId di URL)
   const isListMode = Boolean(mapelId);
   const activeSubjectData = isListMode ? subjectsData.find(s => s.id === mapelId) : null;
 
   return (
     <div className={`${styles.quizWrapperPage} ${mapelId ? styles.fullscreenOverlayMode : ''}`}>
-      
-      {/* 👑 PANEL STATS & POINTS (Hanya tampil di halaman depan) */}
+      {/* 🌟 SUDAH DIPERBAIKI: Menggunakan toastOptions dengan duration otomatis 3 detik */}
+      <Toaster 
+        position="top-center" 
+        reverseOrder={false} 
+        toastOptions={{
+          duration: 3000,
+        }}
+      />
+
       {!isListMode && (
         <div className={styles.premiumHeaderSummary}>
           <div className={styles.xpBalanceBlock}>
@@ -124,7 +163,6 @@ const QuizPage = () => {
         </div>
       )}
 
-      {/* 🧩 KONTEN UTAMA SCROLLABLE */}
       <div className={styles.quizMainContentScrollable}>
         {loading ? (
           <div className={styles.loadingStateArea}>
@@ -133,7 +171,6 @@ const QuizPage = () => {
           </div>
         ) : (
           <>
-            {/* LEVEL 0: PILIH MATA PELAJARAN (Tampil jika rute tidak ada mapelId) */}
             {!isListMode && (
               <div className={styles.selectionStandardGrid}>
                 <div className={styles.subjectBoxRow}>
@@ -151,11 +188,10 @@ const QuizPage = () => {
               </div>
             )}
 
-            {/* LEVEL 1: LIST PAKET SOAL (Tampil jika rute ada mapelId) */}
             {isListMode && activeSubjectData && (
               <div className={styles.levelOneContainer}>
                 <div className={styles.headerNavLevelOne}>
-                  <button className={styles.backLevelBtn} onClick={() => navigate(`/quiz`)}>
+                  <button className={styles.backLevelBtn} onClick={handleGoBack}>
                     <FaArrowLeft /> Kembali
                   </button>
                   <div className={styles.subjectIndicatorBadge}>
@@ -165,26 +201,42 @@ const QuizPage = () => {
 
                 <div className={styles.quizListWrapper}>
                   {filteredQuizzes.length > 0 ? (
-                    filteredQuizzes.map((quiz, idx) => (
-                      <div 
-                        key={quiz.id}
-                        className={styles.chapterQuizItemRow}
-                        onClick={() => handleStartQuiz(quiz)}
-                      >
-                        <div className={styles.quizLeftMetaBox}>
-                          <div className={styles.quizNumberIndicator}>
-                            Q{quiz.themeNumber || idx + 1}
+                    filteredQuizzes.map((quiz, idx) => {
+                      const currentQuizIndex = idx;
+                      const isLocked = currentQuizIndex > completedOrder;
+
+                      return (
+                        <div 
+                          key={quiz.id}
+                          className={`${styles.chapterQuizItemRow} ${isLocked ? styles.quizItemRowLocked : ''}`}
+                          onClick={() => {
+                            if (isLocked) {
+                              toast.error("Quiz terkunci, silahkan selesaikan quiz sebelumnya!");
+                            } else {
+                              handleStartQuiz(quiz, currentQuizIndex);
+                            }
+                          }}
+                          style={isLocked ? { opacity: 0.55, cursor: 'not-allowed' } : {}}
+                        >
+                          <div className={styles.quizLeftMetaBox}>
+                            <div className={styles.quizNumberIndicator}>
+                              Q{quiz.themeNumber || idx + 1}
+                            </div>
+                            <div className={styles.quizTitleMetaTxt}>
+                              <h5>{quiz.theme}</h5>
+                              <span className={styles.quizTargetSub}>Total: {quiz.units?.length || 0} Soal</span>
+                            </div>
                           </div>
-                          <div className={styles.quizTitleMetaTxt}>
-                            <h5>{quiz.theme}</h5>
-                            <span className={styles.quizTargetSub}>Total: {quiz.units?.length || 0} Soal</span>
+                          <div className={styles.quizRightActionZone}>
+                            {isLocked ? (
+                              <FaLock style={{ color: '#94a3b8', fontSize: '0.85rem' }} />
+                            ) : (
+                              <FaChevronRight className={styles.arrowGoQuiz} />
+                            )}
                           </div>
                         </div>
-                        <div className={styles.quizRightActionZone}>
-                          <FaChevronRight className={styles.arrowGoQuiz} />
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className={styles.emptyStateContainer}>
                       <p>Belum ada paket kuis tersedia untuk mata pelajaran ini.</p>

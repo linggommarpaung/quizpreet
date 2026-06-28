@@ -1,366 +1,298 @@
 /* client/src/pages/IndexPage.module.css */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap');
 
 .landingContainer {
-    background: var(--background-color);
+    background-color: #f4f6f9; /* Tetap abu-abu lembut premium agar mata nyaman */
     min-height: 100vh;
-    font-family: 'Poppins', sans-serif;
-    color: var(--text-color);
-    overflow-x: hidden;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1e293b;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
     position: relative;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    overflow-x: hidden;
 }
 
-/* Efek Gradien Latar Belakang */
-.landingContainer::before {
-    content: '';
-    position: absolute;
-    top: 0; right: 0; bottom: 0; left: 0;
-    background: radial-gradient(circle at 15% 25%, var(--primary-color), transparent 40%),
-                radial-gradient(circle at 85% 75%, var(--primary-hover-color), transparent 40%);
-    opacity: 0.15;
-    animation: backgroundGlow 15s ease-in-out infinite alternate;
-    will-change: transform;
+/* --- LOGO --- */
+.logo {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    letter-spacing: -0.5px;
+    cursor: default;
+    user-select: none;
+}
+.logoMain { color: #0284c7; }
+.logoSub {
+    color: #1e3a8a;
+    text-shadow: 0 2px 10px rgba(2, 132, 199, 0.15);
 }
 
-@keyframes backgroundGlow {
-    from { transform: scale(1) rotate(0deg); opacity: 0.1; }
-    to { transform: scale(1.1) rotate(5deg); opacity: 0.2; }
-}
-
-/* --- HEADER & BADGE --- */
+/* --- NAVBAR --- */
 .header {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 5%;
-    position: absolute;
-    width: 100%;
-    top: 0;
-    left: 0;
-    z-index: 10;
-    background: transparent;
-    box-sizing: border-box;
+    border-bottom: 1px solid #e2e8f0;
 }
 
-.logo {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: var(--text-color);
-    text-shadow: 0 0 10px var(--primary-color);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.badge {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    background: linear-gradient(135deg, #ff416c, #ff4b2b);
-    color: #fff;
-    padding: 4px 10px;
-    border-radius: 10px;
-    letter-spacing: 1px;
-    box-shadow: 0 0 10px rgba(255, 65, 108, 0.5);
-    text-shadow: none;
-}
-
-.loginButton {
-    background: transparent;
-    border: 2px solid var(--border-color);
-    color: var(--text-color);
+.loginBtn {
+    background-color: #ffffff;
+    color: #0284c7;
+    border: 1px solid rgba(2, 132, 199, 0.2);
+    border-radius: 12px;
     padding: 10px 24px;
-    border-radius: 50px;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: all 0.2s ease;
 }
-
-.loginButton:hover {
-    background: var(--card-bg);
-    border-color: var(--primary-color);
-    box-shadow: 0 0 15px var(--primary-color);
+.loginBtn:hover {
+    background-color: #0284c7;
+    color: #ffffff;
+    border-color: #0284c7;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
 }
 
 /* --- HERO SECTION --- */
 .heroSection {
-    min-height: 85vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 140px 5% 40px;
+    max-width: 850px;
+    margin: 80px auto 50px auto;
+    padding: 0 24px;
     text-align: center;
-    position: relative;
-    z-index: 1;
-    box-sizing: border-box;
 }
 
-.heroContent {
-    max-width: 750px;
-    animation: fadeInUp 1s ease-out forwards;
-    display: flex;
-    flex-direction: column;
+.announcementTag {
+    display: inline-flex;
     align-items: center;
-}
-
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Tag Kecil di Atas Judul */
-.liveTag {
-    background: rgba(255, 255, 255, 0.07);
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    padding: 6px 16px;
-    border-radius: 30px;
-    font-size: 0.9rem;
+    gap: 8px;
+    background-color: #ffffff;
+    color: #d97706;
+    font-size: 0.8rem;
     font-weight: 600;
-    margin-bottom: 20px;
-    color: var(--text-color);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    padding: 8px 18px;
+    border-radius: 30px;
+    margin-bottom: 26px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    cursor: default;
+}
+.tagDot {
+    width: 6px;
+    height: 6px;
+    background-color: #d97706;
+    border-radius: 50%;
 }
 
 .tagline {
-    font-size: clamp(2.3rem, 4.5vw, 4rem);
+    font-size: 3rem;
     font-weight: 800;
-    line-height: 1.2;
-    margin-bottom: 25px;
-    text-shadow: 0 0 20px var(--primary-color);
+    color: #0f172a;
+    line-height: 1.25;
+    margin: 0 0 22px 0;
+    letter-spacing: -1px;
 }
-
-.highlight {
-    color: var(--primary-color);
-    text-shadow: 0 0 15px var(--primary-color);
-}
+.textHighlight { color: #0284c7; }
 
 .description {
-    font-size: 1.15rem;
-    color: var(--text-color);
-    opacity: 0.8;
-    margin: 0 auto 40px auto;
-    max-width: 650px;
+    font-size: 1.08rem;
     line-height: 1.7;
+    color: #64748b;
+    margin: 0 auto 40px auto;
+    max-width: 720px;
+    cursor: default;
 }
 
-.ctaButton {
-    padding: 18px 45px;
-    background: linear-gradient(90deg, var(--primary-color), var(--primary-hover-color));
-    color: #fff;
+.mainCtaBtn {
+    background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
+    color: #ffffff;
     border: none;
-    border-radius: 50px;
-    font-size: 1.25rem;
-    font-weight: 700;
+    border-radius: 14px;
+    padding: 16px 40px;
+    font-size: 1.05rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.4s ease;
-    box-shadow: 0 5px 25px var(--shadow-color);
+    box-shadow: 0 10px 25px rgba(30, 58, 138, 0.15);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+.mainCtaBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(30, 58, 138, 0.25);
 }
 
-.ctaButton:hover {
-    transform: translateY(-5px) scale(1.05);
-    box-shadow: 0 10px 35px var(--shadow-color);
-}
-
-/* --- SECTION MATA PELAJARAN (NEW) --- */
+/* --- SUBJECTS --- */
 .subjectsSection {
-    padding: 60px 5% 20px;
-    position: relative;
-    z-index: 1;
-    text-align: center;
+    max-width: 1100px;
+    margin: 80px auto 30px auto;
+    padding: 0 24px;
 }
-
 .sectionTitle {
-    font-size: 2rem;
+    font-size: 1.3rem;
     font-weight: 700;
-    margin-bottom: 40px;
-    position: relative;
-    display: inline-block;
+    color: #0f172a;
+    margin-bottom: 30px;
 }
-
-.sectionTitle::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 4px;
-    background: var(--primary-color);
-    border-radius: 2px;
-}
-
-/* Grid System yang Responsif */
-.subjectGrid {
+.subjectsGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
+}
+
+.subjectCard {
+    background-color: #ffffff; /* Kartu kontras bersih di atas abu-abu */
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 160px;
+    cursor: default;
+    user-select: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.01);
+    transition: background-color 0.2s ease, border-color 0.2s ease, opacity 0.8s cubic-bezier(0.215, 0.61, 0.355, 1), transform 0.8s cubic-bezier(0.215, 0.61, 0.355, 1);
+    
+    /* Keadaan awal sebelum discroll */
+    opacity: 0;
+    transform: translateY(30px);
+}
+.subjectCard:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.04);
+}
+.subjectTopRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.subjectIcon {
+    font-size: 1.6rem;
+    background-color: #f8fafc;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+}
+.cardArrow { color: #cbd5e1; font-size: 1rem; }
+.subjectInfoWrapper h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+.subjectInfoWrapper p {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: #64748b;
+}
+
+/* --- FEATURES --- */
+.featureSection {
+    max-width: 1100px;
+    margin: 50px auto 80px auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+.featureCard {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    cursor: default;
+    user-select: none;
+    transition: opacity 0.8s cubic-bezier(0.215, 0.61, 0.355, 1), transform 0.8s cubic-bezier(0.215, 0.61, 0.355, 1);
+
+    /* Keadaan awal sebelum discroll */
+    opacity: 0;
+    transform: translateY(30px);
+}
+.featureIcon { font-size: 1.6rem; margin-bottom: 16px; }
+.featureCard h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+    color: #0f172a;
+}
+.featureCard p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #64748b;
+    margin: 0;
+}
+
+/* --- FOOTER --- */
+.pageFooter {
+    text-align: center;
+    border-top: 1px solid #e2e8f0;
+    padding: 26px;
+    font-size: 0.82rem;
+    color: #94a3b8;
     max-width: 1100px;
     margin: 0 auto;
 }
 
-/* Card Modern dengan Efek Glassmorphism */
-.subjectCard {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    padding: 25px 20px;
-    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
+/* ==========================================================================
+   🌟 ANIMASI BASE FADE-UP (SEPERTI SEBELUMNYA)
+   ========================================================================== */
+
+.scrollReveal {
+    opacity: 0;
+    transform: translateY(35px);
+    transition: opacity 0.8s cubic-bezier(0.215, 0.61, 0.355, 1), 
+                transform 0.8s cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 
-.subjectCard::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 4px;
-    background: var(--accent-color);
-    opacity: 0.7;
+/* Memicu elemen utama terangkat saat di-scroll */
+.visible.scrollReveal {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-.subjectIcon {
-    font-size: 2.5rem;
-    display: block;
-    margin-bottom: 15px;
-    transition: transform 0.3s ease;
+/* Mengatur efek kartu di dalamnya agar terangkat bergantian (Stagger) */
+.visible .subjectCard,
+.visible .featureCard {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: calc(var(--card-index) * 0.1s);
 }
 
-.subjectCard h4 {
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin: 0 0 8px 0;
+/* ==========================================================================
+   🌟 INTERACTIVE FEEDBACK (SHAKE & GIGGLE SAAT DIKLIK)
+   ========================================================================== */
+.shakeAnim {
+    animation: effectShake 0.4s ease-in-out;
+}
+@keyframes effectShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
 }
 
-.subjectCard p {
-    font-size: 0.85rem;
-    opacity: 0.6;
-    margin: 0;
+.giggleAnim {
+    animation: effectGiggle 0.4s ease-in-out;
+    border-color: #0284c7 !important;
 }
-
-/* Hover Effect pada Card Mapel */
-.subjectCard:hover {
-    transform: translateY(-8px);
-    background: rgba(255, 255, 255, 0.08);
-    border-color: var(--accent-color);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2), 0 0 15px var(--accent-color);
-}
-
-.subjectCard:hover .subjectIcon {
-    transform: scale(1.2) rotate(5deg);
-}
-
-/* --- FEATURE SECTION (UPDATED) --- */
-.featureSection {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 30px;
-    padding: 80px 5%;
-    position: relative;
-    z-index: 1;
-    box-sizing: border-box;
-}
-
-.featureCard {
-    background: var(--card-bg);
-    padding: 40px 30px;
-    border-radius: 24px;
-    border: 1px solid var(--border-color);
-    text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-    will-change: transform;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.featureIconContainer {
-    font-size: 2rem;
-    background: rgba(255, 255, 255, 0.05);
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 16px;
-    margin-bottom: 20px;
-    border: 1px solid var(--border-color);
-}
-
-.featureCard:hover {
-    transform: translateY(-10px);
-    border-color: var(--primary-color);
-    box-shadow: 0 10px 30px var(--shadow-color), 0 0 20px var(--primary-color);
-}
-
-.featureCard:hover .featureIconContainer {
-    background: var(--primary-color);
-    border-color: var(--primary-hover-color);
-    box-shadow: 0 0 15px var(--primary-color);
-}
-
-.featureCard h3 {
-    color: var(--text-color);
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 15px;
-    background: -webkit-linear-gradient(45deg, var(--text-color), var(--primary-color));
-    -webkit-background-clip: text;
-    background-clip: text;
-}
-
-.featureCard p {
-    color: var(--text-color);
-    opacity: 0.75;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin: 0;
+@keyframes effectGiggle {
+    0%, 100% { transform: scale(1); }
+    30% { transform: scale(0.96); }
+    60% { transform: scale(1.02); }
 }
 
 /* --- RESPONSIVE --- */
 @media (max-width: 768px) {
-    .header,
-    .heroSection,
-    .subjectsSection,
-    .featureSection {
-        padding-left: 20px;
-        padding-right: 20px;
-    }
-    
-    .tagline {
-        font-size: 2rem;
-    }
-
-    .description {
-        font-size: 0.95rem;
-        margin-bottom: 30px;
-    }
-
-    .ctaButton {
-        font-size: 1.1rem;
-        padding: 15px 35px;
-    }
-
-    .sectionTitle {
-        font-size: 1.6rem;
-    }
-
-    .subjectGrid {
-        grid-template-columns: repeat(2, 1fr); /* Tampilan 2 kolom rapi di HP */
-        gap: 12px;
-    }
-    
-    .subjectCard {
-        padding: 20px 15px;
-    }
-}
-
-@media (max-width: 480px) {
-    .subjectGrid {
-        grid-template-columns: 1fr;
-    }
+    .tagline { font-size: 2.2rem; }
+    .featureSection, .subjectsGrid { grid-template-columns: 1fr; }
+    .heroSection { margin-top: 40px; }
 }
