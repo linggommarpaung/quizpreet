@@ -1,111 +1,163 @@
 /* client/src/components/ui/LoginForm.module.css */
 
 .formContainer {
-    background: #ffffff;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background: transparent; /* Hilangkan card double ganda di dalam parent */
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
     width: 100%;
-    max-width: 400px;
     box-sizing: border-box;
-    transition: all 0.3s ease-in-out;
-}
-
-.formContainer h2 {
-    text-align: center;
-    color: #007bff; /* Warna biru konsisten */
-    margin-bottom: 25px;
-    font-size: 1.8em;
 }
 
 .inputGroup {
-    margin-bottom: 15px;
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+.labelRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
 }
 
 .inputGroup label {
     display: block;
-    margin-bottom: 8px;
-    color: #333;
+    margin-bottom: 6px;
+    color: #334155;
+    font-size: 0.85rem;
     font-weight: 600;
 }
 
 .inputGroup input {
-    width: calc(100% - 20px);
-    padding: 12px 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 1em;
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    color: #0f172a;
+    background-color: #f8fafc;
     box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.inputGroup input::placeholder {
+    color: #94a3b8;
 }
 
 .inputGroup input:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    border-color: #0284c7;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
 }
 
+/* Tombol Submit Utama */
 .submitButton {
     width: 100%;
     padding: 12px;
-    background-color: #007bff; /* Warna biru konsisten */
+    background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
     color: white;
     border: none;
-    border-radius: 5px;
-    font-size: 1.1em;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin-top: 20px;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.1);
+    transition: all 0.2s ease;
+    margin-top: 10px;
 }
 
 .submitButton:hover:not(:disabled) {
-    background-color: #0056b3;
+    box-shadow: 0 6px 16px rgba(30, 58, 138, 0.2);
+    transform: translateY(-0.5px);
 }
 
 .submitButton:disabled {
-    background-color: #a0c4ff;
+    background: #cbd5e1;
+    color: #94a3b8;
     cursor: not-allowed;
+    box-shadow: none;
 }
 
+/* Pemisah Minimalis Modern */
+.separator {
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #94a3b8;
+}
+.separator::before,
+.separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e2e8f0;
+}
+.separator span {
+    padding: 0 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Tombol Google Premium Minimalis */
 .googleButton {
     width: 100%;
-    padding: 12px;
-    background-color: #4285F4; /* Warna Google Blue */
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 1.1em;
+    padding: 11px;
+    background-color: #ffffff;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin-top: 15px; /* Jarak dari tombol login */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    transition: all 0.2s ease;
 }
 
 .googleButton:hover:not(:disabled) {
-    background-color: #357ae8;
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
 }
 
+/* Teks Pengalih Mode */
 .switchText {
     text-align: center;
-    margin-top: 15px;
-    color: #555;
-    font-size: 0.9em;
+    margin-top: 20px;
+    color: #64748b;
+    font-size: 0.85rem;
 }
 
-.switchText span {
-    color: #007bff;
+.switchText span, .forgotLink {
+    color: #0284c7;
     font-weight: 600;
     cursor: pointer;
-    text-decoration: underline;
+    text-decoration: none;
+    transition: color 0.15s ease;
 }
 
-.switchText span:hover {
-    color: #0056b3;
+.switchText span:hover, .forgotLink:hover {
+    color: #1e3a8a;
 }
 
-/* Responsif */
-@media (max-width: 600px) {
-    .formContainer {
-        border-radius: 0;
-        box-shadow: none;
-        padding: 20px;
-    }
+.forgotLink {
+    font-size: 0.8rem;
+}
+
+.infoText {
+    font-size: 0.82rem;
+    color: #64748b;
+    line-height: 1.5;
+    text-align: left;
+    margin-bottom: 20px;
+    background-color: #f0fdf4;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #bbf7d0;
 }

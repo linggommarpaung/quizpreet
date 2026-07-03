@@ -13,14 +13,14 @@ import styles from './LobbyGroupPage.module.css';
 
 import { db } from '../config/firebaseConfig'; 
 import { 
-    doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, arrayUnion, collection 
+    doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, collection 
 } from 'firebase/firestore';
 
 // 🌐 MENGIKUTI LEADERBOARD: Mendukung efek border avatar toko secara realtime
 import '../components/border.css'; 
 
 const LobbyGroupPage = () => {
-    const { currentUser, getLeaderboardData } = useAuth();
+    const { currentUser } = useAuth();
     const { roomId } = useParams(); 
     const navigate = useNavigate();
 
@@ -77,6 +77,15 @@ const LobbyGroupPage = () => {
 
             const data = docSnap.data();
             setLobbyData(data); 
+
+            // 🛠️ REDIRECTION ARENA SESUAI MODE GAME 🛠️
+            if (data.status === 'playing') {
+                if (data.gameMode === 'competition') {
+                    navigate(`/contest/group/arenaMatch/${roomId.toUpperCase()}`);
+                } else {
+                    navigate(`/contest/group/arena/${roomId.toUpperCase()}`);
+                }
+            }
             setViewMode('inside'); 
             hasJoinedRoom.current = true;
         }, (error) => {
@@ -228,7 +237,7 @@ const LobbyGroupPage = () => {
                 });
             }
         } catch (err) {
-            console.error("Gagal mengakses Mikrofon:", err);
+            console.error("Gagal accessing Mikrofon:", err);
             toast.error("Gagal mengaktifkan Voice! Periksa izin mic.");
             setIsSpeakerOn(false);
             setIsMicOn(false);
@@ -326,16 +335,87 @@ const LobbyGroupPage = () => {
         }
     };
 
+    // ==================== 🛠... RE-CHECK / TOGGLE READY LOGIC ====================
+    const handleToggleReady = async () => {
+        if (!roomId || !lobbyData) return;
+        const roomRef = doc(db, 'lobbyGroups', roomId.toUpperCase());
+        const isStudyMode = lobbyData.gameMode === 'study';
+
+        // Pengaman: Jika user saat ini ternyata bertindak sebagai Host di room tersebut, paksa status selalu true
+        const isHost = isStudyMode 
+            ? lobbyData.members[0]?.uid === currentUser?.uid
+            : lobbyData.teamA[0]?.uid === currentUser?.uid;
+
+        if (isHost) return; 
+
+        try {
+            if (isStudyMode) {
+                const updated = lobbyData.members.map(m => 
+                    m.uid === currentUser.uid ? { ...m, isReady: !m.isReady } : m
+                );
+                await updateDoc(roomRef, { members: updated });
+            } else {
+                const inA = lobbyData.teamA.some(m => m.uid === currentUser.uid);
+                if (inA) {
+                    const updated = lobbyData.teamA.map(m => m.uid === currentUser.uid ? { ...m, isReady: !m.isReady } : m);
+                    await updateDoc(roomRef, { teamA: updated });
+                } else {
+                    const updated = lobbyData.teamB.map(m => m.uid === currentUser.uid ? { ...m, isReady: !m.isReady } : m);
+                    await updateDoc(roomRef, { teamB: updated });
+                }
+            }
+            toast.success('Status kesiapan kamu diperbarui!');
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    // ==================== 🛠️ FITUR MENJADI KAPTEN REGUE (BISA COPOT PASANG) ====================
+    const handleBecomeCaptain = async (teamLetter) => {
+        if (!roomId || !lobbyData) return;
+        const roomRef = doc(db, 'lobbyGroups', roomId.toUpperCase());
+        
+        let teamList = teamLetter === 'A' ? [...lobbyData.teamA] : [...lobbyData.teamB];
+        
+        const isAlreadyMeCaptain = teamList.some(m => m.uid === currentUser.uid && m.isCaptain);
+        
+        const alreadyHasOtherCaptain = teamList.some(m => m.uid !== currentUser.uid && m.isCaptain);
+        if (!isAlreadyMeCaptain && alreadyHasOtherCaptain) {
+            return toast.error('Kapten sudah terisi oleh rekan tim lain! 👑');
+        }
+
+        const updatedList = teamList.map(m => 
+            m.uid === currentUser.uid 
+                ? { ...m, isCaptain: !isAlreadyMeCaptain, isReady: !isAlreadyMeCaptain ? true : m.isReady } 
+                : m
+            );
+
+        try {
+            if (teamLetter === 'A') {
+                await updateDoc(roomRef, { teamA: updatedList });
+            } else {
+                await updateDoc(roomRef, { teamB: updatedList });
+            }
+
+            if (!isAlreadyMeCaptain) {
+                toast.success('Kamu resmi menjadi Kapten Regu! 👑');
+            } else {
+                toast('Kamu mengundurkan diri sebagai Kapten. 👋', { icon: 'ℹ️' });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     // ==================== FIRESTORE CRUD ACTIONS ====================
     
     const handleCreateGroupRoom = async () => {
         if (!currentUser) return toast.error('Silakan login terlebih dahulu!');
         setIsLoading(true);
         
-        // ✨ MODIFIKASI: Mengunci format depan agar selalu "GRP" + 3 digit karakter acak
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let generatedRoomId = 'GRP';
-        for (let i = 0; i < 3; i++) {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let generatedRoomId = '';
+        for (let i = 0; i < 6; i++) {
             generatedRoomId += characters.charAt(Math.floor(Math.random() * characters.length));
         }
 
@@ -345,9 +425,11 @@ const LobbyGroupPage = () => {
             uid: currentUser.uid,
             name: currentUser.displayName || 'Host',
             photoURL: currentUser.photoURL || '',
-            activeBorder: currentUser.activeBorder || 'borderNormal', // Ambil border toko
+            activeBorder: currentUser.activeBorder || 'borderNormal', 
             isMicOn: false,
             isSpeakerOn: false,
+            isReady: true, // 🌟 HOST SELALU OTOMATIS READY (TRUE) SEJAK AWAL
+            isCaptain: false,
             joinedAt: Date.now()
         };
 
@@ -357,6 +439,7 @@ const LobbyGroupPage = () => {
             maxMembers,
             gameMode,
             matchType,
+            status: 'lobby',
             createdAt: Date.now(),
             members: gameMode === 'study' ? [newUserData] : [],
             teamA: gameMode === 'competition' ? [newUserData] : [],
@@ -397,8 +480,9 @@ const LobbyGroupPage = () => {
             let cleanTeamB = (data.teamB || []).filter(m => m.uid !== currentUser.uid);
 
             const totalNow = data.gameMode === 'study' ? cleanMembers.length : (cleanTeamA.length + cleanTeamB.length);
+            const capacityLimit = data.gameMode === 'study' ? data.maxMembers : (data.maxMembers * 2);
 
-            if (totalNow >= data.maxMembers) {
+            if (totalNow >= capacityLimit) {
                 toast.error('Maaf, kuota tampung ruangan grup ini sudah penuh! 👥⚠️');
                 setViewMode('menu');
                 navigate('/contest/group');
@@ -410,9 +494,11 @@ const LobbyGroupPage = () => {
                 uid: currentUser.uid,
                 name: currentUser.displayName || 'Anggota baru',
                 photoURL: currentUser.photoURL || '',
-                activeBorder: currentUser.activeBorder || 'borderNormal', // Ambil border toko
+                activeBorder: currentUser.activeBorder || 'borderNormal', 
                 isMicOn: false,
                 isSpeakerOn: false,
+                isReady: false, 
+                isCaptain: false,
                 joinedAt: Date.now()
             };
 
@@ -420,7 +506,11 @@ const LobbyGroupPage = () => {
                 cleanMembers.push(memberStructure);
                 await updateDoc(roomRef, { members: cleanMembers });
             } else {
-                cleanTeamA.push(memberStructure);
+                if (cleanTeamA.length < data.maxMembers) {
+                    cleanTeamA.push(memberStructure);
+                } else {
+                    cleanTeamB.push(memberStructure);
+                }
                 await updateDoc(roomRef, { teamA: cleanTeamA, teamB: cleanTeamB });
             }
         } catch (err) {
@@ -437,14 +527,21 @@ const LobbyGroupPage = () => {
         navigate(`/contest/group/lobby/${cleanCode}`);
     };
 
+    // ==================== 🛠️ PROSES PINDAH TIM DENGAN PROTEKSI HOST KUNCI ====================
     const handleSwitchTeam = async (targetTeam) => {
         if (!roomId || !currentUser || !lobbyData) return;
         const roomRef = doc(db, 'lobbyGroups', roomId.toUpperCase());
         
+        // 🚨 PROTEKSI HOST: Posisi Host (Index 0 Tim Alfa) tidak boleh pindah tim!
+        const isHost = lobbyData.teamA[0]?.uid === currentUser.uid;
+        if (isHost) {
+            return toast.error('Sebagai Host pembuat room, kamu tidak boleh pindah tim! Posisi kamu dikunci di Tim Alfa. 👑🛡️');
+        }
+
         const myOldData = [...lobbyData.teamA, ...lobbyData.teamB].find(m => m.uid === currentUser.uid);
         if (!myOldData) return;
 
-        const updatedUser = { ...myOldData, joinedAt: Date.now() };
+        const updatedUser = { ...myOldData, isCaptain: false, isReady: false, joinedAt: Date.now() };
 
         let filteredA = lobbyData.teamA.filter(m => m.uid !== currentUser.uid);
         let filteredB = lobbyData.teamB.filter(m => m.uid !== currentUser.uid);
@@ -458,6 +555,7 @@ const LobbyGroupPage = () => {
                 filteredB.push(updatedUser);
             }
             await updateDoc(roomRef, { teamA: filteredA, teamB: filteredB });
+            toast.success(`Berhasil pindah ke Tim ${targetTeam === 'A' ? 'Alfa' : 'Beta'}!`);
         } catch (err) {
             console.error(err);
         }
@@ -497,39 +595,47 @@ const LobbyGroupPage = () => {
         navigate('/contest/group');
     };
 
-    // 🌟 SEPERTI LEADERBOARD: Fungsi klik avatar untuk trigger modal zoom preview
     const handleAvatarClick = (e, photoUrl, name) => {
         e.stopPropagation();
         const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=2563eb&color=ffffff&bold=true`;
         setSelectedAvatar({ url: photoUrl || fallbackUrl, name });
     };
 
+    const handleStartMatchSession = async () => {
+        if (!roomId) return;
+        try {
+            const roomRef = doc(db, 'lobbyGroups', roomId.toUpperCase());
+            
+            // Mengubah status menjadi playing, trigger akan ditangkap realtime listener di atas
+            await updateDoc(roomRef, {
+                status: 'playing'
+            });
+        } catch (err) {
+            toast.error("Gagal memulai pertandingan.");
+        }
+    };
+
     const currentSubject = subjectsList.find(s => s.id === (lobbyData?.subject || selectedSubject));
 
-    // ==================== 🛠️ RENDERING AVATAR DENGAN KONDISI GLOW VOICE + BORDER TOKO ====================
+    // ==================== RENDERING AVATAR DENGAN UKURAN KONSTAN MINIMALIS ====================
     const renderMemberAvatar = (user, index, isHostMode = false, baseFrameClass) => {
         let voiceIcon = null;
         let voiceIndicatorClass = '';
 
-        // 🟢 ATURAN PRIORITAS BORDER:
-        // Jika sedang On-Mic atau dengar suara, pakai border voice. Jika diam, pakai border dari toko (activeBorder)
-        let finalBorderClass = user?.activeBorder || 'borderNormal';
+        const finalBorderClass = user?.activeBorder || 'borderNormal';
 
         if (user.isSpeakerOn && user.isMicOn) {
             voiceIcon = <FaMicrophone />;
             voiceIndicatorClass = `${styles.miniVoiceProfileIndicator} ${styles.voiceActiveGreen}`;
-            finalBorderClass = styles.borderActiveGreen; // Override ke hijau menyala
         } else if (user.isSpeakerOn && !user.isMicOn) {
             voiceIcon = <FaVolumeHigh />;
             voiceIndicatorClass = `${styles.miniVoiceProfileIndicator} ${styles.voiceSpeakerOnlyBlue}`;
-            finalBorderClass = styles.borderSpeakerOnlyBlue; // Override ke biru menyala
         }
 
         const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=2563eb&color=ffffff&bold=true`;
 
         return (
             <div className={styles.avatarContainerPositionRef}>
-                {/* Frame Div menggunakan gabungan class CSS Module & file border.css toko */}
                 <div 
                     className={`${baseFrameClass} ${finalBorderClass}`} 
                     onClick={(e) => handleAvatarClick(e, user?.photoURL, user?.name)}
@@ -540,7 +646,6 @@ const LobbyGroupPage = () => {
                     />
                 </div>
 
-                {/* Indikator Icon Mic / Speaker melayang kecil */}
                 {voiceIcon && (
                     <span className={voiceIndicatorClass}>
                         {voiceIcon}
@@ -548,6 +653,13 @@ const LobbyGroupPage = () => {
                 )}
 
                 {isHostMode && index === 0 && <span className={styles.hostCrownBadge}>HOST</span>}
+                {user?.isCaptain && (
+                    <span style={{
+                        position: 'absolute', bottom: '-2px', right: '-2px', 
+                        background: '#eab308', color: 'white', fontSize: '10px', 
+                        padding: '2px 4px', borderRadius: '4px', fontWeight: 'bold'
+                    }}>👑 C</span>
+                )}
             </div>
         );
     };
@@ -558,6 +670,35 @@ const LobbyGroupPage = () => {
         const isHost = isStudyMode 
             ? lobbyData?.members[0]?.uid === currentUser?.uid
             : lobbyData?.teamA[0]?.uid === currentUser?.uid;
+
+        const currentTotalPlayers = isStudyMode
+            ? (lobbyData?.members?.length || 0)
+            : ((lobbyData?.teamA?.length || 0) + (lobbyData?.teamB?.length || 0));
+
+        const maxTotalCapacity = isStudyMode ? (lobbyData?.maxMembers || 5) : ((lobbyData?.maxMembers || 5) * 2);
+
+        const isSlotFull = currentTotalPlayers === maxTotalCapacity;
+        const hasCaptainA = lobbyData?.teamA?.some(m => m.isCaptain);
+        const hasCaptainB = lobbyData?.teamB?.some(m => m.isCaptain);
+        const captainsOk = isStudyMode ? true : (hasCaptainA && hasCaptainB);
+        
+        // 🔒 HOST DIPASTIKAN SELALU SIAP (TRUE) SECARA SINKRON
+        const allUsersReady = isStudyMode 
+            ? lobbyData?.members?.every(m => m.uid === (lobbyData?.members[0]?.uid) ? true : m.isReady)
+            : [...(lobbyData?.teamA || []), ...(lobbyData?.teamB || [])].every(m => m.uid === (lobbyData?.teamA[0]?.uid) ? true : m.isReady);
+
+        const isRoomReadyToStart = isStudyMode 
+            ? (currentTotalPlayers >= 2 && allUsersReady)
+            : (isSlotFull && captainsOk && allUsersReady);
+
+        const myLobbyProfile = isStudyMode 
+            ? lobbyData?.members?.find(m => m.uid === currentUser?.uid)
+            : [...(lobbyData?.teamA || []), ...(lobbyData?.teamB || [])].find(m => m.uid === currentUser?.uid);
+
+        const amICaptainInTeam = isStudyMode ? false : (
+            lobbyData?.teamA?.some(m => m.uid === currentUser.uid && m.isCaptain) ||
+            lobbyData?.teamB?.some(m => m.uid === currentUser.uid && m.isCaptain)
+        );
 
         return (
             <div className={styles.groupLobbyMainContainer}>
@@ -584,6 +725,22 @@ const LobbyGroupPage = () => {
                         {isMicOn ? <FaMicrophone /> : <FaMicrophoneSlash />}
                         <span>{isMicOn ? 'Mic Open' : 'Mic Mute'}</span>
                     </button>
+
+                    {/* TOMBOL READY UNTUK NON-HOST */}
+                    {!isHost && (
+                        <button 
+                            className={styles.voiceControlBtn} 
+                            disabled={amICaptainInTeam}
+                            style={{ 
+                                backgroundColor: myLobbyProfile?.isReady ? '#10b981' : '#f59e0b', 
+                                color: 'white',
+                                opacity: amICaptainInTeam ? 0.8 : 1
+                            }}
+                            onClick={handleToggleReady}
+                        >
+                            <FaCheck /> <span>{myLobbyProfile?.isReady ? 'SIAP ✔' : 'BELUM SIAP'}</span>
+                        </button>
+                    )}
                 </div>
 
                 <div className={styles.metaBadgeHorizontalFlex}>
@@ -595,7 +752,7 @@ const LobbyGroupPage = () => {
                         {currentSubject?.icon} {currentSubject?.name}
                     </span>
                     <span className={styles.limitIndicatorTag}>
-                        <FaUsers /> Max: {lobbyData?.maxMembers} Orang
+                        <FaUsers /> {currentTotalPlayers} / {maxTotalCapacity} Orang
                     </span>
                 </div>
 
@@ -621,9 +778,11 @@ const LobbyGroupPage = () => {
                                     {renderMemberAvatar(user, index, true, styles.lobbyMainAvatarFrame)}
                                     <div className={styles.memberIdentityCenter}>
                                         <h4>{user.name}</h4>
-                                        <p>{index === 0 ? 'Pemimpin Kelompok' : 'Anggota Tim'}</p>
+                                        <p>{index === 0 ? 'Pemimpin Kelompok (Host)' : 'Anggota Tim'}</p>
                                     </div>
-                                    <span className={styles.statusLiveReadyBadge}><FaCheck /> Ready</span>
+                                    <span className={styles.statusLiveReadyBadge} style={{ color: (index === 0 || user.isReady) ? '#10b981' : '#f59e0b' }}>
+                                        {(index === 0 || user.isReady) ? '✔ Ready' : '⏳ Waiting'}
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -634,13 +793,24 @@ const LobbyGroupPage = () => {
                         <div className={styles.factionTeamColumnBlock}>
                             <div className={styles.factionColumnHeaderRow}>
                                 <h3>🔵 TIM ALFA ({lobbyData?.teamA?.length || 0}/{lobbyData?.maxMembers})</h3>
-                                <button className={styles.teamSwitchActionBtn} onClick={() => handleSwitchTeam('A')}>
-                                    <FaArrowRightArrowLeft /> Masuk
-                                </button>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button className={styles.teamSwitchActionBtn} onClick={() => handleSwitchTeam('A')}>
+                                        <FaArrowRightArrowLeft /> Masuk
+                                    </button>
+                                    {lobbyData?.teamA?.some(m => m.uid === currentUser.uid) && (
+                                        <button 
+                                            className={styles.teamSwitchActionBtn} 
+                                            style={{ backgroundColor: lobbyData?.teamA?.find(m => m.uid === currentUser.uid)?.isCaptain ? '#ef4444' : '#eab308' }} 
+                                            onClick={() => handleBecomeCaptain('A')}
+                                        >
+                                            {lobbyData?.teamA?.find(m => m.uid === currentUser.uid)?.isCaptain ? 'Copot Jabatan' : 'Jadi Kapten'}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div className={styles.teamSlotsVerticalList}>
                                 {lobbyData?.teamA?.map((user, idx) => (
-                                    <div key={user.uid} className={styles.compactUserCardItem}>
+                                    <div key={user.uid} className={styles.compactUserCardItem} style={{ borderLeft: (idx === 0 || user.isReady) ? '4px solid #10b981' : '4px solid #f59e0b' }}>
                                         {renderMemberAvatar(user, idx, false, styles.lobbyListAvatarFrame)}
                                         <h4>{user.name} {idx === 0 && <strong style={{color:'#2563eb'}}>(Host)</strong>}</h4>
                                     </div>
@@ -660,9 +830,20 @@ const LobbyGroupPage = () => {
                             <div className={styles.factionColumnHeaderRow}>
                                 <h3>🔴 TIM BETA ({lobbyData?.teamB?.length || 0}/{lobbyData?.maxMembers})</h3>
                                 {lobbyData?.matchType === 'custom' ? (
-                                    <button className={styles.teamSwitchActionBtn} style={{backgroundColor: '#ef4444'}} onClick={() => handleSwitchTeam('B')}>
-                                        <FaArrowRightArrowLeft /> Masuk
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        <button className={styles.teamSwitchActionBtn} style={{backgroundColor: '#ef4444'}} onClick={() => handleSwitchTeam('B')}>
+                                            <FaArrowRightArrowLeft /> Masuk
+                                        </button>
+                                        {lobbyData?.teamB?.some(m => m.uid === currentUser.uid) && (
+                                            <button 
+                                                className={styles.teamSwitchActionBtn} 
+                                                style={{ backgroundColor: lobbyData?.teamB?.find(m => m.uid === currentUser.uid)?.isCaptain ? '#ef4444' : '#eab308' }} 
+                                                onClick={() => handleBecomeCaptain('B')}
+                                            >
+                                                {lobbyData?.teamB?.find(m => m.uid === currentUser.uid)?.isCaptain ? 'Copot Jabatan' : 'Jadi Kapten'}
+                                            </button>
+                                        )}
+                                    </div>
                                 ) : (
                                     <span className={styles.lockInfoLabel}>Terkunci (Acak)</span>
                                 )}
@@ -676,7 +857,7 @@ const LobbyGroupPage = () => {
                                 ) : (
                                     <>
                                         {lobbyData?.teamB?.map((user) => (
-                                            <div key={user.uid} className={styles.compactUserCardItem}>
+                                            <div key={user.uid} className={styles.compactUserCardItem} style={{ borderLeft: user.isReady ? '4px solid #10b981' : '4px solid #f59e0b' }}>
                                                 {renderMemberAvatar(user, 0, false, styles.lobbyListAvatarFrame)}
                                                 <h4>{user.name}</h4>
                                             </div>
@@ -693,8 +874,17 @@ const LobbyGroupPage = () => {
 
                 <div className={styles.bottomFixedActionBarContainer}>
                     {isHost ? (
-                        <button className={styles.launchMatchCoreActionBtn}>
-                            🚀 MULAI SESI {isStudyMode ? 'BELAJAR BARENG' : 'KOMPETISI TIM'}
+                        <button 
+                            className={styles.launchMatchCoreActionBtn} 
+                            onClick={handleStartMatchSession}
+                            disabled={!isRoomReadyToStart}
+                            style={{ 
+                                opacity: isRoomReadyToStart ? 1 : 0.5, 
+                                cursor: isRoomReadyToStart ? 'pointer' : 'not-allowed',
+                                backgroundColor: isRoomReadyToStart ? '#2563eb' : '#475569'
+                            }}
+                        >
+                            🚀 {isRoomReadyToStart ? `MULAI SESI ${isStudyMode ? 'BELAJAR BARENG' : 'KOMPETISI TIM'}` : 'MENUNGGU SLOT PENUH, KAPTEN & SEMUA SIAP...'}
                         </button>
                     ) : (
                         <div className={styles.playerNotificationWaitingBanner}>
@@ -704,7 +894,6 @@ const LobbyGroupPage = () => {
                     )}
                 </div>
 
-                {/* 🔒 SEPERTI LEADERBOARD: MODAL POP-UP PREVIEW AVATAR KETIKA DIKLIK */}
                 {selectedAvatar && (
                     <div className={styles.modalOverlay} onClick={() => setSelectedAvatar(null)}>
                         <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -805,14 +994,13 @@ const LobbyGroupPage = () => {
                     
                     <div className={styles.formElementFieldGroup}>
                         <label>Masukkan Kode Unik Grup:</label>
-                        {/* ✨ MODIFIKASI: Menambahkan e.target.value.toUpperCase() agar otomatis huruf besar saat diketik */}
                         <input 
                             className={styles.modernTextInputBoxStyle} 
                             type="text" 
-                            placeholder="Contoh: GRPX92" 
+                            placeholder="KODE ROOM" 
                             maxLength={6} 
                             value={inputRoomCode} 
-                            onChange={(e) => setInputRoomCode(e.target.value.toUpperCase())} 
+                            onChange={(e) => setInputRoomCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))} 
                             disabled={isLoading} 
                         />
                     </div>

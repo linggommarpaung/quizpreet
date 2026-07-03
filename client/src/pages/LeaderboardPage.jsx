@@ -85,7 +85,7 @@ const LeaderboardPage = () => {
       <div className={styles.fixedTopSection}>
         <header className={styles.headerArea}>
           <h1 className={styles.title}>Papan Peringkat</h1>
-          <p className={styles.description}>Uji keahlian otakmu bersama jawara sekolah lainnya!</p>
+          <p className={styles.description}>Uji keahlianmu bersama jawara sekolah lainnya!</p>
         </header>
 
         {/* 🏆 STRUKTUR PODIUM JUARA INDEPENDEN (RANK 1, 2, 3) */}

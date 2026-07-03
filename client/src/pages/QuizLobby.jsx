@@ -2,21 +2,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-// Menggunakan modul Firestore modular (v9/v10+)
 import { db } from '../config/firebaseConfig'; 
 import { doc, setDoc, updateDoc, onSnapshot, deleteDoc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { 
-    FaArrowLeft, 
-    FaUserGroup, 
-    FaPlus, 
-    FaRightToBracket, 
-    FaCopy, 
-    FaCheck, 
-    FaHourglassHalf, 
-    FaGamepad,
-    FaCircleInfo
+    FaArrowLeft, FaPlus, FaRightToBracket, 
+    FaCopy, FaHourglassHalf, FaSpinner 
 } from 'react-icons/fa6';
 import styles from './QuizLobby.module.css';
 
@@ -30,20 +22,23 @@ const QuizLobby = () => {
     const [inputRoomCode, setInputRoomCode] = useState('');
     const [lobbyData, setLobbyData] = useState(null);
     const [showExitModal, setShowExitModal] = useState(false); 
-    const hasRequestedStatus = useRef(false);
+    const [isLoading, setIsLoading] = useState(false); 
 
-    // Ref untuk memantau data lawan sebelumnya (keperluan memicu toast)
+    const hasRequestedStatus = useRef(false);
     const prevChallengerRef = useRef(null);
 
     const subjectsList = [
-        { id: 'mtk', name: 'Matematika', icon: '📐', themeColor: '#2563eb' },
-        { id: 'ipa', name: 'Sains (IPA)', icon: '🧪', themeColor: '#128c7e' },
-        { id: 'ips', name: 'Ilmu Pengetahuan Sosial (IPS)', icon: '🌍', themeColor: '#7c3aed' },
-        { id: 'bing', name: 'Bahasa Inggris', icon: '🇬🇧', themeColor: '#eab308' }
+        { id: 'mtk', name: 'Matematika', icon: '📐' },
+        { id: 'ipa', name: 'Sains (IPA)', icon: '🧪' },
+        { id: 'ips', name: 'Ilmu Pengetahuan Sosial (IPS)', icon: '🌍' },
+        { id: 'bing', name: 'Bahasa Inggris', icon: '🇬🇧' },
+        { id: 'bind', name: 'Bahasa Indonesia', icon: '🇮🇩' },
+        { id: 'all', name: 'Seluruh Pelajaran (Acak)', icon: '🎲' }
     ];
 
+    // ✨ MODIFIKASI: Murni 6 karakter acak HURUF SAJA (Angka dibuang total)
     function generateRoomId() {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         let result = '';
         for (let i = 0; i < 6; i++) {
             result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -51,19 +46,17 @@ const QuizLobby = () => {
         return result;
     }
 
-    // ==================== REALTIME FIRESTORE LISTENERS ====================
+    // LISTENER REAL-TIME FIREBASE
     useEffect(() => {
         if (!lobbyId) return;
-
         const cleanRoomId = lobbyId.trim().toUpperCase();
-        // Referensi dokumen di Firestore: collection 'lobbies_1v1', document 'KODEROOM'
         const roomDocRef = doc(db, 'lobbies_1v1', cleanRoomId);
 
-        // onSnapshot adalah pengganti onValue/socket.on untuk memantau data secara realtime
         const unsubscribe = onSnapshot(roomDocRef, (snapshot) => {
+            // JIKA ROOM TIBA-TIBA DIHAPUS (Karena Host Keluar)
             if (!snapshot.exists()) {
                 if (viewMode === 'inside') {
-                    toast.error('Lobby telah dibubarkan oleh Host!', { duration: 5000, icon: '🚪' });
+                    toast.error('Lobby telah dibubarkan oleh Host!', { duration: 4000, icon: '🚪' });
                     setLobbyData(null);
                     setViewMode('menu');
                     navigate('/contest/1v1');
@@ -73,37 +66,27 @@ const QuizLobby = () => {
 
             const data = snapshot.data();
 
-            // Deteksi game dimulai
+            // Pengalihan ke arena saat match dimulai
             if (data.status === 'playing') {
                 toast.success('Pertandingan Dimulai! Mengalihkan ke Arena...', { icon: '🎮' });
+                navigate(`/contest/1v1/arena/${cleanRoomId}`); 
             }
 
-            // Logika memicu toast penantang masuk/keluar
+            // Notifikasi gabung/keluar untuk challenger
             if (data.challenger && !prevChallengerRef.current) {
-                toast.success(`${data.challenger.name} telah memasuki lobby pertandingan, siap dimulai!`, { 
-                    icon: '⚔️', 
-                    duration: 5000,
-                    style: {
-                        border: '1px solid #2563eb',
-                        padding: '16px',
-                        color: '#1e3a8a',
-                        fontWeight: 'bold'
-                    }
-                });
+                toast.success(`${data.challenger.name} telah bergabung!`, { icon: '⚔️' });
             } else if (!data.challenger && prevChallengerRef.current) {
-                toast.error(`${prevChallengerRef.current.name} telah keluar dari lobby mabar.`, { icon: '🏃‍♂️', duration: 4000 });
+                toast.error(`${prevChallengerRef.current.name} keluar dari lobby.`, { icon: '🏃‍♂️' });
             }
 
             setLobbyData(data);
             prevChallengerRef.current = data.challenger || null;
         });
 
-        return () => {
-            unsubscribe();
-        };
+        return () => unsubscribe();
     }, [lobbyId, viewMode, navigate]);
 
-    // ==================== SYNC URL / REFRESH BROWSER (SHARE LINK) ====================
+    // LOGIKA SAAT USER MASUK LEWAT LINK MABAR / REFRESH
     useEffect(() => {
         const checkLinkJoin = async () => {
             if (lobbyId && currentUser && !hasRequestedStatus.current) {
@@ -114,28 +97,30 @@ const QuizLobby = () => {
                 try {
                     const snapshot = await getDoc(roomDocRef);
                     if (!snapshot.exists()) {
-                        toast.error('Sesi tautan mabar tidak ditemukan atau sudah hangus!');
+                        toast.error('Tautan mabar tidak ditemukan!');
                         setViewMode('menu');
                         navigate('/contest/1v1');
                         return;
                     }
 
                     const data = snapshot.data();
-
-                    if (data.host.uid === currentUser.uid || (data.challenger && data.challenger.uid === currentUser.uid)) {
-                        return; // Host atau Challenger lama menyegarkan halaman
-                    } else if (!data.challenger) {
-                        // Slot kosong, isi data penantang baru
+                    if (data.host.uid === currentUser.uid) {
+                        return; // Host aman, jangan timpa datanya sendiri
+                    } 
+                    
+                    // Jika kamu adalah challenger yang masuk/kembali masuk
+                    if (!data.challenger || data.challenger.uid === currentUser.uid) {
                         await updateDoc(roomDocRef, {
                             challenger: {
                                 uid: currentUser.uid,
                                 name: currentUser.displayName || 'Penantang',
                                 photoURL: currentUser.photoURL || '',
+                                score: 0,
                                 isReady: true
                             }
                         });
                     } else {
-                        toast.error('Maaf, room duel ini sudah penuh!');
+                        toast.error('Room duel sudah penuh!');
                         setViewMode('menu');
                         navigate('/contest/1v1');
                     }
@@ -156,97 +141,69 @@ const QuizLobby = () => {
         }
     }, [lobbyId, currentUser, navigate]);
 
-    // ==================== EVENT HANDLERS FUNGSI ====================
     const handleCreateRoom = async () => {
         if (!currentUser) return toast.error('Silakan login terlebih dahulu!');
         
-        const roomId = generateRoomId();
-        const roomDocRef = doc(db, 'lobbies_1v1', roomId);
-
-        const newLobbyStructure = {
-            roomId: roomId,
-            status: 'waiting',
-            subject: selectedSubject,
-            host: {
-                uid: currentUser.uid,
-                name: currentUser.displayName || 'Host Mabar',
-                photoURL: currentUser.photoURL || '',
-                isReady: true
-            },
-            challenger: null
-        };
-
+        setIsLoading(true);
         try {
-            await setDoc(roomDocRef, newLobbyStructure);
-            toast.success('Lobby Berhasil Dibuat! 🚀');
+            const roomId = generateRoomId();
+            const roomDocRef = doc(db, 'lobbies_1v1', roomId);
+
+            await setDoc(roomDocRef, {
+                roomId: roomId,
+                status: 'waiting',
+                subject: selectedSubject,
+                host: {
+                    uid: currentUser.uid,
+                    name: currentUser.displayName || 'Host Mabar',
+                    photoURL: currentUser.photoURL || '',
+                    score: 0,
+                    isReady: true
+                },
+                challenger: null
+            });
+            
             setViewMode('inside');
             navigate(`/contest/1v1/lobby/${roomId}`);
         } catch (error) {
             console.error(error);
-            toast.error('Gagal membuat room, coba lagi.');
+            toast.error('Gagal membuat room.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleJoinRoomByCode = async () => {
-        if (!inputRoomCode.trim()) return toast.error('Silakan ketik kode room dulu!');
-        if (!currentUser) return toast.error('Silakan login terlebih dahulu!');
-
+        if (!inputRoomCode.trim()) return toast.error('Masukkan kode room!');
+        
+        setIsLoading(true);
         const cleanCode = inputRoomCode.trim().toUpperCase();
-        const roomDocRef = doc(db, 'lobbies_1v1', cleanCode);
-
-        try {
-            const snapshot = await getDoc(roomDocRef);
-            if (!snapshot.exists()) {
-                return toast.error('Kode room tidak valid atau sudah kedaluwarsa!');
-            }
-
-            const data = snapshot.data();
-
-            if (data.challenger && data.challenger.uid !== currentUser.uid) {
-                return toast.error('Maaf, slot pertandingan sudah penuh!');
-            }
-
-            if (!data.challenger) {
-                await updateDoc(roomDocRef, {
-                    challenger: {
-                        uid: currentUser.uid,
-                        name: currentUser.displayName || 'Penantang',
-                        photoURL: currentUser.photoURL || '',
-                        isReady: true
-                    }
-                });
-            }
-
-            setViewMode('inside');
+        
+        setTimeout(() => {
+            setIsLoading(false);
             navigate(`/contest/1v1/lobby/${cleanCode}`);
-        } catch (error) {
-            console.error(error);
-            toast.error('Gagal masuk ke room.');
-        }
+        }, 500);
     };
 
-    const handleTriggerExitRequest = () => {
-        setShowExitModal(true);
-    };
-
+    // LOGIKA KELUAR ROOM YANG LEBIH PINTAR
     const handleConfirmActualExit = async () => {
+        if (!lobbyId) return;
         setShowExitModal(false);
+        
         const isCurrentUserHost = lobbyData?.host?.uid === currentUser?.uid;
         const cleanCode = lobbyId.toUpperCase();
         const roomDocRef = doc(db, 'lobbies_1v1', cleanCode);
 
         try {
             if (isCurrentUserHost) {
-                // Jika host keluar, hapus dokumen kamar mabar dari Firestore
+                // JIKA HOST KELUAR -> HAPUS TOTAL DARI FIREBASE
                 await deleteDoc(roomDocRef);
             } else {
-                // Jika penantang keluar, kosongkan field 'challenger'
-                await updateDoc(roomDocRef, {
-                    challenger: null
-                });
+                // JIKA CHALLENGER KELUAR -> HAPUS SLOT CHALLENGER SAJA
+                await updateDoc(roomDocRef, { challenger: null });
             }
         } catch (error) {
-            console.error("Gagal keluar ruangan:", error);
+            console.error("Gagal keluar room:", error);
         }
 
         setLobbyData(null);
@@ -254,145 +211,95 @@ const QuizLobby = () => {
         navigate('/contest/1v1');
     };
 
-    const copyRoomIdToClipboard = () => {
-        if (lobbyId) {
-            const inviteURL = `${window.location.origin}/contest/1v1/lobby/${lobbyId.toUpperCase()}`;
-            navigator.clipboard.writeText(inviteURL);
-            toast.success('Link mabar otomatis berhasil disalin!');
-        }
+    // FITUR KLIK UNTUK COPY KODE + TOAST
+    const handleCopyRoomLink = () => {
+        if (!lobbyId) return;
+        navigator.clipboard.writeText(lobbyId.toUpperCase());
+        toast.success('Kode room berhasil disalin!', { icon: '📋' });
     };
 
     const handleStartMatchGame = async () => {
-        if (!lobbyData?.challenger) {
-            return toast.error('Tidak bisa memulai, tunggu lawan bergabung dulu!');
-        }
-        
-        const cleanCode = lobbyId.toUpperCase();
-        const roomDocRef = doc(db, 'lobbies_1v1', cleanCode);
-        
-        // Update status di Firestore menjadi 'playing' untuk trigger lawan
-        await updateDoc(roomDocRef, { status: 'playing' });
+        if (!lobbyData?.challenger) return toast.error('Tunggu lawan bergabung!');
+        const roomDocRef = doc(db, 'lobbies_1v1', lobbyId.toUpperCase());
+        await updateDoc(roomDocRef, { status: 'playing' }); 
     };
 
     const currentSubjectInfo = subjectsList.find(s => s.id === (lobbyData?.subject || selectedSubject));
 
-    // ==================== RENDERING TAMPILAN DALAM RUANGAN (INSIDE) ====================
+    // ================= VIEW: DI DALAM LOBBY =================
     if (viewMode === 'inside') {
         const isCurrentUserHost = lobbyData?.host?.uid === currentUser?.uid;
-
         return (
             <div className={styles.lobbyMainWrapper}>
-                <div className={styles.headerTopZone}>
-                    <button className={styles.circularBackBtn} onClick={handleTriggerExitRequest}>
+                <div className={styles.headerCompact}>
+                    <button className={styles.circularBackBtn} onClick={() => setShowExitModal(true)}>
                         <FaArrowLeft />
                     </button>
-                    <h2>Ruang Tunggu Duel 1v1</h2>
+                    <h2>Ruang Tunggu 1v1</h2>
+                    <div className={styles.subjectBadge}>
+                        {currentSubjectInfo?.icon} {currentSubjectInfo?.name}
+                    </div>
                 </div>
 
-                <div className={styles.infoSubjectBannerBar}>
-                    <FaCircleInfo />
-                    <span>Kategori Duel Saat Ini: <strong>{currentSubjectInfo?.name || 'Mata Pelajaran'}</strong></span>
+                {/* KLIK PADA CARD INI AKAN MENYALIN KODE DAN MEMICU TOAST */}
+                <div className={styles.codeCompactCard} onClick={handleCopyRoomLink}>
+                    <span>KODE ROOM :</span>
+                    <h2>{lobbyId?.toUpperCase()} <FaCopy className={styles.iconSmall} /></h2>
                 </div>
 
-                <div className={styles.roomCodeDisplayCardBox} onClick={copyRoomIdToClipboard} title="Klik untuk salin link">
-                    <span className={styles.codeLabelTxt}>KODE ROOM DUEL</span>
-                    <div className={styles.codeFlexDisplayRow}>
-                        <h1 className={styles.mainCodeRoomText}>{lobbyId?.toUpperCase()}</h1>
-                        <FaCopy className={styles.copyIconFeedback} />
-                    </div>
-                    <p>Klik kotak di atas untuk menyalin link mabar cepat dan kirim ke kawanmu!</p>
-                </div>
-
-                <div className={styles.duelistVSContainerRow}>
-                    {/* SLOT PLAYER 1: HOST */}
-                    <div className={styles.duelistCardItemBox}>
-                        <div className={styles.avatarWrapperContainer}>
-                            {lobbyData?.host?.photoURL ? (
-                                <img src={lobbyData.host.photoURL} alt="Host Avatar" className={styles.duelistAvatarImage} />
-                            ) : (
-                                <div className={styles.fallbackAvatarDuelist}>
-                                    {lobbyData?.host?.name?.charAt(0).toUpperCase() || 'H'}
-                                </div>
-                            )}
-                            <span className={styles.badgeRolePlayerTag}>HOST</span>
-                        </div>
-                        <h4>{lobbyData?.host?.name || 'Menghubungkan...'}</h4>
-                        <div className={styles.statusReadyBadgeStyle}>
-                            <FaCheck className={styles.iconCheckGreen} /> Ready
+                <div className={styles.duelCompactRow}>
+                    <div className={styles.playerCompactCard}>
+                        <img src={lobbyData?.host?.photoURL || '/default-avatar.png'} alt="Host" />
+                        <div className={styles.playerInfo}>
+                            <span className={styles.badgeRole}>HOST</span>
+                            <h4>{lobbyData?.host?.name || 'Menghubungkan...'}</h4>
                         </div>
                     </div>
+                    
+                    <div className={styles.vsBadge}>VS</div>
 
-                    <div className={styles.versusMidLogoAnimationArea}>
-                        <div className={styles.vsCircleOuterCircle}>
-                            <h2>VS</h2>
-                        </div>
-                    </div>
-
-                    {/* SLOT PLAYER 2: PENANTANG (CHALLENGER) */}
-                    <div className={styles.duelistCardItemBox}>
+                    <div className={`${styles.playerCompactCard} ${!lobbyData?.challenger ? styles.emptySlot : ''}`}>
                         {lobbyData?.challenger ? (
                             <>
-                                <div className={styles.avatarWrapperContainer}>
-                                    {lobbyData.challenger.photoURL ? (
-                                        <img src={lobbyData.challenger.photoURL} alt="Challenger Avatar" className={styles.duelistAvatarImage} />
-                                    ) : (
-                                        <div className={styles.fallbackAvatarDuelist} style={{ backgroundColor: '#7c3aed' }}>
-                                            {lobbyData?.challenger?.name?.charAt(0).toUpperCase() || 'L'}
-                                        </div>
-                                    )}
-                                    <span className={styles.badgeRolePlayerTag} style={{ backgroundColor: '#7c3aed' }}>LAWAN</span>
-                                </div>
-                                <h4>{lobbyData.challenger.name}</h4>
-                                <div className={styles.statusReadyBadgeStyle}>
-                                    <FaCheck className={styles.iconCheckGreen} /> Ready
+                                <img src={lobbyData.challenger.photoURL || '/default-avatar.png'} alt="Challenger" />
+                                <div className={styles.playerInfo}>
+                                    <span className={styles.badgeRole}>LAWAN</span>
+                                    <h4>{lobbyData.challenger.name}</h4>
                                 </div>
                             </>
                         ) : (
-                            <div className={styles.emptySlotWaitingAnimation}>
-                                <div className={styles.pulseLoadingCircleIcon}>
-                                    <FaHourglassHalf className={styles.spinningHourglassIcon} />
-                                </div>
-                                <h4>Menunggu Lawan...</h4>
-                                <p>Bagikan kode room di atas agar temanmu bisa masuk ke slot ini.</p>
+                            <div className={styles.waitingSlot}>
+                                <FaHourglassHalf className={styles.spinIcon} />
+                                <span>Menunggu Lawan...</span>
                             </div>
                         )}
                     </div>
                 </div>
 
-                <div className={styles.lobbyActionBottomControlArea}>
+                <div className={styles.actionBottom}>
                     {isCurrentUserHost ? (
                         <button 
-                            className={lobbyData?.challenger ? styles.startGameActiveTriggerBtn : styles.startGameDisabledTriggerBtn}
-                            disabled={!lobbyData?.challenger}
+                            className={styles.startBtn} 
+                            disabled={!lobbyData?.challenger} 
                             onClick={handleStartMatchGame}
                         >
-                            <FaGamepad /> MULAI PERTANDINGAN
+                            MULAI PERTANDINGAN
                         </button>
                     ) : (
-                        <div className={styles.waitingHostNotificationBanner}>
-                            <FaHourglassHalf className={styles.spinningHourglassIcon} /> 
-                            <span>Menunggu Host Memulai Pertandingan...</span>
-                        </div>
+                        <div className={styles.waitingHost}>Menunggu Host Memulai...</div>
                     )}
                 </div>
 
-                {/* POP-UP MODAL KONFIRMASI KUSTOM KELUAR RUANGAN */}
                 {showExitModal && (
-                    <div className={styles.modalOverlayZone}>
-                        <div className={styles.modalContentCard}>
-                            <h3>Konfirmasi Keluar</h3>
-                            <p>
-                                {isCurrentUserHost 
-                                    ? "Apakah kamu yakin ingin keluar? Karena kamu adalah HOST, ruangan mabar ini akan dihapus otomatis dan lawan akan dikeluarkan."
-                                    : "Apakah kamu yakin ingin meninggalkan ruangan duel ini?"}
+                    <div className={styles.modalOverlay}>
+                        <div className={styles.modalContent}>
+                            <h3>{isCurrentUserHost ? 'Bubarkan Lobby?' : 'Keluar Ruangan?'}</h3>
+                            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '8px 0 16px' }}>
+                                {isCurrentUserHost ? 'Lobby akan dihapus secara permanen.' : 'Kamu bisa bergabung kembali nanti.'}
                             </p>
-                            <div className={styles.modalButtonsRow}>
-                                <button className={styles.modalCancelBtn} onClick={() => setShowExitModal(false)}>
-                                    Batal
-                                </button>
-                                <button className={styles.modalConfirmBtn} onClick={handleConfirmActualExit}>
-                                    Ya, Keluar
-                                </button>
+                            <div className={styles.modalBtns}>
+                                <button onClick={() => setShowExitModal(false)}>Batal</button>
+                                <button onClick={handleConfirmActualExit} className={styles.dangerBtn}>Keluar</button>
                             </div>
                         </div>
                     </div>
@@ -401,64 +308,44 @@ const QuizLobby = () => {
         );
     }
 
-    // ==================== RENDERING TAMPILAN MENU UTAMA SELEKSI ====================
+    // ================= VIEW: UTAMA (MENU BUAT / GABUNG) =================
     return (
         <div className={styles.lobbyMainWrapper}>
-            <div className={styles.headerTopZone}>
+            <div className={styles.headerCompact}>
                 <button className={styles.circularBackBtn} onClick={() => navigate('/dashboard')}>
                     <FaArrowLeft />
                 </button>
                 <h2>Arena Duel 1 vs 1</h2>
             </div>
 
-            <div className={styles.dualMenuFlexGrid}>
-                <div className={styles.lobbyCardActionBlock}>
-                    <div className={styles.cardHeaderIconArea}>
-                        <FaPlus className={styles.mainBlueIcon} />
-                    </div>
-                    <h3>Buat Lobby Duel</h3>
-                    <p className={styles.descCardText}>Pilih mata pelajaran kuis di bawah ini, lalu buat kode unik untuk mengundang teman mabar kamu.</p>
-                    
-                    <div className={styles.formGroupControl}>
-                        <label>Pilih Mata Pelajaran:</label>
-                        <select 
-                            value={selectedSubject} 
-                            onChange={(e) => setSelectedSubject(e.target.value)}
-                            className={styles.customSelectInput}
-                        >
-                            {subjectsList.map((sub) => (
-                                <option key={sub.id} value={sub.id}>
-                                    {sub.icon} {sub.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <button className={styles.primaryActionBlueBtn} onClick={handleCreateRoom}>
-                        <FaGamepad /> Buat Room Sekarang
+            <div className={styles.menuCompactGrid}>
+                <div className={styles.menuCompactCard}>
+                    <FaPlus className={styles.cardIcon} />
+                    <h3>Buat Lobby</h3>
+                    <select value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)}>
+                        {subjectsList.map(sub => (
+                            <option key={sub.id} value={sub.id}>{sub.icon} {sub.name}</option>
+                        ))}
+                    </select>
+                    <button className={styles.primaryBtn} onClick={handleCreateRoom} disabled={isLoading}>
+                        {isLoading ? <FaSpinner className={styles.loadingSpinnerBtn} /> : 'Buat Room'}
                     </button>
                 </div>
 
-                <div className={styles.lobbyCardActionBlock}>
-                    <div className={styles.cardHeaderIconArea}>
-                        <FaRightToBracket className={styles.mainBlueIcon} />
-                    </div>
-                    <h3>Gabung Lobby Teman</h3>
-                    <p className={styles.descCardText}>Masukkan 6-digit kode room unik yang dibagikan oleh temanmu untuk langsung memulai duel mabar.</p>
-                    
-                    <div className={styles.formGroupControl}>
-                        <label>Kode Room Duel:</label>
-                        <input 
-                            type="text"
-                            placeholder="Contoh: MAT61A"
-                            value={inputRoomCode}
-                            onChange={(e) => setInputRoomCode(e.target.value)}
-                            maxLength={6}
-                            className={styles.customTextInputStyle}
-                        />
-                    </div>
-                    <button onClick={handleJoinRoomByCode} className={styles.secondaryActionBlueBtn}>
-                        <FaUserGroup /> Gabung Ke Duel
+                <div className={styles.menuCompactCard}>
+                    <FaRightToBracket className={styles.cardIcon} />
+                    <h3>Gabung Lobby</h3>
+                    <input 
+                        type="text" 
+                        placeholder="KODE ROOM" 
+                        value={inputRoomCode} 
+                        // ✨ MODIFIKASI: Kunci input agar otomatis jadi huruf kapital dan buang angka/simbol secara realtime
+                        onChange={(e) => setInputRoomCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))} 
+                        maxLength={6}
+                        disabled={isLoading}
+                    />
+                    <button className={styles.secondaryBtn} onClick={handleJoinRoomByCode} disabled={isLoading}>
+                        {isLoading ? <FaSpinner className={styles.loadingSpinnerBtn} /> : 'Gabung'}
                     </button>
                 </div>
             </div>

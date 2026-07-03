@@ -1,7 +1,7 @@
 // client/src/components/ui/ForgotPasswordForm.jsx
 
 import React, { useState } from 'react';
-import styles from './LoginForm.module.css'; // Re-use some styles
+import styles from './LoginForm.module.css';
 
 const ForgotPasswordForm = ({ onSubmit, isLoading, onSwitchToLogin }) => {
     const [email, setEmail] = useState('');
@@ -13,25 +13,26 @@ const ForgotPasswordForm = ({ onSubmit, isLoading, onSwitchToLogin }) => {
 
     return (
         <form onSubmit={handleSubmit} className={styles.formContainer}>
-            <p className={styles.switchText} style={{ marginBottom: '20px' }}>
-                Masukkan email Anda, kami akan kirim link reset password.
+            <p className={styles.infoText}>
+                Masukkan email aktif Anda. Kami akan mengirimkan tautan aman untuk memperbarui password Anda.
             </p>
             <div className={styles.inputGroup}>
-                <label htmlFor="forgot-email">Email</label>
+                <label htmlFor="forgot-email">Email Terdaftar</label>
                 <input
                     type="email"
                     id="forgot-email"
+                    placeholder="contoh@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                 />
             </div>
             <button type="submit" disabled={isLoading} className={styles.submitButton}>
-                {isLoading ? 'Mengirim...' : 'Kirim Link Reset'}
+                {isLoading ? 'Mengirim...' : 'Kirim Link Pemulihan'}
             </button>
 
             <p className={styles.switchText}>
-                Ingat password Anda? <span onClick={onSwitchToLogin}>Login</span>
+                Ingat password Anda? <span onClick={onSwitchToLogin}>Kembali Login</span>
             </p>
         </form>
     );

@@ -1,15 +1,15 @@
 // client/src/components/ui/DailyPathDashboard.jsx
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllDailyPaths, getUserProgress, updateUserData } from '../../services/firestoreService';
+import { getAllDailyPaths, updateUserData } from '../../services/firestoreService';
 import styles from './DailyPathDashboard.module.css';
 import Spinner from './Spinner';
 import { FaStar, FaChartLine, FaCoins, FaChevronRight, FaUsers, FaUser, FaBookOpen, FaRocket, FaGamepad } from 'react-icons/fa6';
 import { toast } from 'react-hot-toast';
 
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase'; 
 
 import '../../components/border.css';
@@ -24,6 +24,9 @@ const DailyPathDashboard = () => {
     const [dynamicQuizzes, setDynamicQuizzes] = useState([]);
     const [realRank, setRealRank] = useState('-');
     const [loading, setLoading] = useState(true);
+
+    // 🟢 STATE BARU: Menyimpan data profil user secara realtime dari Firestore (Koleksi users)
+    const [realtimeUser, setRealtimeUser] = useState(null);
 
     const prevLevelRef = useRef();
     const hasTriggeredRef = useRef(false);
@@ -48,149 +51,189 @@ const DailyPathDashboard = () => {
         toast.success('Selamat belajar! Jangan lupa cek menu Pengaturan ya 🚀');
     };
 
-    const fetchData = useCallback(async () => {
-        if (!currentUser?.uid) return;
+    // =======================================================================
+    // 🟢 REALTIME LISTENER SINKRONISASI COLECTION PROFILE, PROGRESS, & SLIDE
+    // =======================================================================
+    useEffect(() => {
+        if (authLoading || !currentUser?.uid) return;
+
         setLoading(true);
-        try {
-            const [progressData, leaderboardData] = await Promise.all([
-                getUserProgress(currentUser.uid),
-                getLeaderboardData()
-            ]);
-            
-            if (progressData) {
-                const availableSubjects = ['mtk', 'ipa', 'ips', 'inggris', 'indonesia'];
-                
-                const allChaptersFromDB = await getAllDailyPaths(); 
-                const snapshotDailyPaths = await getDocs(collection(db, 'dailyPaths'));
+        let unsubscribeUser = () => {};
+        let unsubscribeProgress = () => {};
+        let unsubscribeLeaderboard = () => {};
+
+        const initDashboardRealtime = async () => {
+            try {
+                // Ambil data Master Silabus dari Koleksi Berbeda SEKALI saja di awal agar ringan dan mencegah race-condition
+                const allChaptersFromDB = await getAllDailyPaths(); // ini mengambil dari koleksi 'chapters'
+                const snapshotDailyPaths = await getDocs(collection(db, 'dailyPaths')); // ini mengambil dari koleksi 'dailyPaths'
                 const allDailyPathsFromDB = snapshotDailyPaths.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                const formatSubjectName = (id) => {
-                    if (id === 'mtk') return 'Matematika';
-                    if (id === 'ipa') return 'IPA';
-                    if (id === 'ips') return 'IPS';
-                    if (id === 'inggris') return 'Bahasa Inggris';
-                    if (id === 'indonesia') return 'Bahasa Indonesia';
-                    return id.toUpperCase();
-                };
-
-                // 1. FILTER MATERI TERBARU
-                const activeSubjects = [];
-                availableSubjects.forEach(subject => {
-                    const subjectMap = progressData[subject];
-                    if (subjectMap && subjectMap.order !== undefined && Number(subjectMap.order) > 0) {
-                        let timestampMs = 0;
-                        if (subjectMap.time) {
-                            if (typeof subjectMap.time.toDate === 'function') timestampMs = subjectMap.time.toDate().getTime();
-                            else if (subjectMap.time.seconds) timestampMs = subjectMap.time.seconds * 1000;
-                            else timestampMs = new Date(subjectMap.time).getTime() || Date.now();
-                        }
-
-                        activeSubjects.push({ 
-                            namaMap: subject, 
-                            order: Number(subjectMap.order), 
-                            time: timestampMs 
-                        });
+                // 1. Dengarkan data Profil Utama User (Koleksi users) -> EXP, Koin, Border, Score
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                unsubscribeUser = onSnapshot(userDocRef, (userDocSnap) => {
+                    if (userDocSnap.exists()) {
+                        setRealtimeUser(userDocSnap.data());
                     }
                 });
 
-                activeSubjects.sort((a, b) => b.time - a.time);
-                const topTwoSubjects = activeSubjects.slice(0, 2);
-                const filteredMaterials = [];
+                // 2. Dengarkan data Progres Belajar Aktif (Koleksi userProgress) -> Mapel Terakhir, Order Bab, Kuis
+                const progressDocRef = doc(db, 'userProgress', currentUser.uid);
+                unsubscribeProgress = onSnapshot(progressDocRef, (progressDocSnap) => {
+                    if (!progressDocSnap.exists()) {
+                        setDynamicMaterials([]);
+                        setDynamicQuizzes([]);
+                        setLoading(false);
+                        return;
+                    }
 
-                topTwoSubjects.forEach(activeSub => {
-                    const matchedChapter = allChaptersFromDB.find(rawDoc => {
-                        const ch = (typeof rawDoc.data === 'function') ? rawDoc.data() : rawDoc;
-                        const dbSubjectId = ch.subjectId || ch.subject_id || ch.SubjectId || ch.subjectID || "";
-                        const dbOrder = ch.order || ch.Order || 0;
+                    const progressData = progressDocSnap.data();
+                    const availableSubjects = ['mtk', 'ipa', 'ips', 'inggris', 'indonesia'];
+                    
+                    const formatSubjectName = (id) => {
+                        if (id === 'mtk') return 'Matematika';
+                        if (id === 'ipa') return 'IPA';
+                        if (id === 'ips') return 'IPS';
+                        if (id === 'inggris') return 'Bahasa Inggris';
+                        if (id === 'indonesia') return 'Bahasa Indonesia';
+                        return id.toUpperCase();
+                    };
 
-                        return String(dbSubjectId).toLowerCase() === String(activeSub.namaMap).toLowerCase() && 
-                               Number(dbOrder) === Number(activeSub.order);
+                    // --- FILTER SLIDE 1: MATERI TERBARU (Mencocokkan ke koleksi 'chapters' via allChaptersFromDB) ---
+                    const activeSubjects = [];
+                    availableSubjects.forEach(subject => {
+                        const subjectMap = progressData[subject];
+                        if (subjectMap && subjectMap.order !== undefined && Number(subjectMap.order) > 0) {
+                            let timestampMs = 0;
+                            if (subjectMap.time) {
+                                if (typeof subjectMap.time.toDate === 'function') timestampMs = subjectMap.time.toDate().getTime();
+                                else if (subjectMap.time.seconds) timestampMs = subjectMap.time.seconds * 1000;
+                                else timestampMs = new Date(subjectMap.time).getTime() || Date.now();
+                            }
+
+                            activeSubjects.push({ 
+                                namaMap: subject, 
+                                order: Number(subjectMap.order), 
+                                time: timestampMs 
+                            });
+                        }
                     });
 
-                    if (matchedChapter) {
-                        const chData = (typeof matchedChapter.data === 'function') ? matchedChapter.data() : matchedChapter;
-                        const finalUid = matchedChapter.id || chData.id || chData.uid || chData.chapterId || "id_tidak_ditemukan";
+                    activeSubjects.sort((a, b) => b.time - a.time);
+                    const topTwoSubjects = activeSubjects.slice(0, 2);
+                    const filteredMaterials = [];
 
-                        filteredMaterials.push({
-                            uidchapter: finalUid,
-                            title: chData.title || `Bab ${activeSub.order}`,
-                            namaMap: activeSub.namaMap,
-                            subjectDisplay: activeSub.namaMap.toUpperCase(),
-                            xpReward: chData.xpReward || 20
+                    topTwoSubjects.forEach(activeSub => {
+                        const matchedChapter = allChaptersFromDB.find(rawDoc => {
+                            const ch = (typeof rawDoc.data === 'function') ? rawDoc.data() : rawDoc;
+                            const dbSubjectId = ch.subjectId || ch.subject_id || ch.SubjectId || ch.subjectID || "";
+                            const dbOrder = ch.order || ch.Order || 0;
+
+                            return String(dbSubjectId).toLowerCase() === String(activeSub.namaMap).toLowerCase() && 
+                                   Number(dbOrder) === Number(activeSub.order);
                         });
-                    }
-                });
 
-                // 2. FILTER KUIS TERBARU
-                const activeQuizzes = [];
-                availableSubjects.forEach(subject => {
-                    const subjectMap = progressData[subject];
-                    if (subjectMap && subjectMap.orderq !== undefined && Number(subjectMap.orderq) > 0) {
-                        let timestampMs = 0;
-                        if (subjectMap.timeq) {
-                            if (typeof subjectMap.timeq.toDate === 'function') timestampMs = subjectMap.timeq.toDate().getTime();
-                            else if (subjectMap.timeq.seconds) timestampMs = subjectMap.timeq.seconds * 1000;
-                            else timestampMs = new Date(subjectMap.timeq).getTime() || Date.now();
+                        if (matchedChapter) {
+                            const chData = (typeof matchedChapter.data === 'function') ? matchedChapter.data() : matchedChapter;
+                            const finalUid = matchedChapter.id || chData.id || chData.uid || chData.chapterId || "id_tidak_ditemukan";
+
+                            filteredMaterials.push({
+                                uidchapter: finalUid,
+                                title: chData.title || `Bab ${activeSub.order}`,
+                                namaMap: activeSub.namaMap,
+                                subjectDisplay: activeSub.namaMap.toUpperCase(),
+                                xpReward: chData.xpReward || 20
+                            });
                         }
-
-                        activeQuizzes.push({ subjectId: subject, currentOrderQ: Number(subjectMap.orderq), timeq: timestampMs });
-                    }
-                });
-
-                activeQuizzes.sort((a, b) => b.timeq - a.timeq);
-                const topTwoQuizzes = activeQuizzes.slice(0, 2);
-                const filteredQuizzes = [];
-
-                topTwoQuizzes.forEach(activeQuiz => {
-                    const matchedQuiz = allDailyPathsFromDB.find(rawDoc => {
-                        const q = (typeof rawDoc.data === 'function') ? rawDoc.data() : rawDoc;
-                        const dbMapel = q.mapel || "";
-                        const dbThemeCodeStr = q.themeCode || "Q0";
-                        
-                        const dbThemeCodeNum = Number(dbThemeCodeStr.replace(/[^0-9]/g, '')) || 0;
-
-                        return String(dbMapel).toLowerCase() === String(activeQuiz.subjectId).toLowerCase() && 
-                               dbThemeCodeNum === Number(activeQuiz.currentOrderQ);
                     });
 
-                    if (matchedQuiz) {
-                        const qData = (typeof matchedQuiz.data === 'function') ? matchedQuiz.data() : matchedQuiz;
-                        const finalUid = matchedQuiz.id || qData.id || qData.uid || "id_tidak_ditemukan";
+                    // --- FILTER SLIDE 2: KUIS TERBARU (Mencocokkan ke koleksi 'dailyPaths' via allDailyPathsFromDB) ---
+                    const activeQuizzes = [];
+                    availableSubjects.forEach(subject => {
+                        const subjectMap = progressData[subject];
+                        if (subjectMap && subjectMap.orderq !== undefined && Number(subjectMap.orderq) > 0) {
+                            let timestampMs = 0;
+                            if (subjectMap.timeq) {
+                                if (typeof subjectMap.timeq.toDate === 'function') timestampMs = subjectMap.timeq.toDate().getTime();
+                                else if (subjectMap.timeq.seconds) timestampMs = subjectMap.timeq.seconds * 1000;
+                                else timestampMs = new Date(subjectMap.timeq).getTime() || Date.now();
+                            }
 
-                        filteredQuizzes.push({
-                            id: finalUid,
-                            title: qData.theme || `Kuis Paket ${activeQuiz.currentOrderQ}`,
-                            subject: formatSubjectName(activeQuiz.subjectId),
-                            rawSubjectId: activeQuiz.subjectId,
-                            isCompleted: true
+                            activeQuizzes.push({ subjectId: subject, currentOrderQ: Number(subjectMap.orderq), timeq: timestampMs });
+                        }
+                    });
+
+                    activeQuizzes.sort((a, b) => b.timeq - a.timeq);
+                    const topTwoQuizzes = activeQuizzes.slice(0, 2);
+                    const filteredQuizzes = [];
+
+                    topTwoQuizzes.forEach(activeQuiz => {
+                        const matchedQuiz = allDailyPathsFromDB.find(rawDoc => {
+                            const q = (typeof rawDoc.data === 'function') ? rawDoc.data() : rawDoc;
+                            const dbMapel = q.mapel || "";
+                            const dbThemeCodeStr = q.themeCode || "Q0";
+                            
+                            const dbThemeCodeNum = Number(dbThemeCodeStr.replace(/[^0-9]/g, '')) || 0;
+
+                            return String(dbMapel).toLowerCase() === String(activeQuiz.subjectId).toLowerCase() && 
+                                   dbThemeCodeNum === Number(activeQuiz.currentOrderQ);
                         });
-                    }
+
+                        if (matchedQuiz) {
+                            const qData = (typeof matchedQuiz.data === 'function') ? matchedQuiz.data() : matchedQuiz;
+                            const finalUid = matchedQuiz.id || qData.id || qData.uid || "id_tidak_ditemukan";
+
+                            filteredQuizzes.push({
+                                id: finalUid,
+                                title: qData.theme || `Kuis Paket ${activeQuiz.currentOrderQ}`,
+                                subject: formatSubjectName(activeQuiz.subjectId),
+                                rawSubjectId: activeQuiz.subjectId,
+                                isCompleted: true
+                            });
+                        }
+                    });
+
+                    setDynamicMaterials(filteredMaterials);
+                    setDynamicQuizzes(filteredQuizzes);
+                    setLoading(false);
+                }, (err) => {
+                    console.error("Gagal sinkronisasi progres belajar:", err);
+                    setLoading(false);
                 });
 
-                setDynamicMaterials(filteredMaterials);
-                setDynamicQuizzes(filteredQuizzes);
-            }
+                // 3. Dengarkan Urutan Posisi Peringkat Leaderboard secara Realtime
+                const leaderboardQuery = query(collection(db, 'users'), orderBy('score', 'desc'));
+                unsubscribeLeaderboard = onSnapshot(leaderboardQuery, (snapshot) => {
+                    const leaderboardData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+                    if (leaderboardData && leaderboardData.length > 0) {
+                        const userIndex = leaderboardData.findIndex(player => player.uid === currentUser.uid);
+                        setRealRank(userIndex !== -1 ? `#${userIndex + 1}` : '-');
+                    }
+                }, (err) => {
+                    console.error("Gagal sinkronisasi leaderboard:", err);
+                });
 
-            if (leaderboardData && leaderboardData.length > 0) {
-                const userIndex = leaderboardData.findIndex(player => player.uid === currentUser.uid);
-                setRealRank(userIndex !== -1 ? `#${userIndex + 1}` : '-');
+            } catch (err) {
+                console.error(err);
+                toast.error("Gagal memuat antrean belajar hari ini.");
+                setLoading(false);
             }
-        } catch (err) {
-            toast.error("Gagal memperbarui antrean belajar hari ini.");
-        } finally {
-            setLoading(false);
-        }
-    }, [currentUser, getLeaderboardData]);
+        };
 
-    useEffect(() => {
-        if (!authLoading) fetchData();
-    }, [authLoading, fetchData]);
+        initDashboardRealtime();
+
+        return () => {
+            unsubscribeUser();
+            unsubscribeProgress();
+            unsubscribeLeaderboard();
+        };
+    }, [currentUser?.uid, authLoading]);
 
     // =======================================================================
-    // 🟢 SISTEM LEVELING SESUAI TABEL & RUMUS EKSPONESIAL KOMPLEKS
+    // 🟢 SISTEM LEVELING SESUAI RUMUS EKSPONESIAL KOMPLEKS (BISA NAIK & TURUN)
     // =======================================================================
-    const totalExp = currentUser?.exp ?? 0;
-    const dbLevel = currentUser?.level || 1; 
+    const totalExp = realtimeUser?.exp ?? currentUser?.exp ?? 0;
+    const dbLevel = realtimeUser?.level ?? currentUser?.level ?? 1; 
 
     const calculateLevelSystem = (exp) => {
         let level = 1;
@@ -225,61 +268,59 @@ const DailyPathDashboard = () => {
         };
     };
 
-    const { level: userLevel, minExp, maxExp, currentProgressInLevel, baseExpNeeded } = calculateLevelSystem(totalExp);
+    const { level: userLevel, maxExp, baseExpNeeded, currentProgressInLevel } = calculateLevelSystem(totalExp);
     const expPercentage = Math.min(100, Math.floor((currentProgressInLevel / baseExpNeeded) * 100));
 
     // Sinkronisasi awal tracker level
     useEffect(() => {
-        if (!authLoading && !loading && currentUser) {
+        if (!authLoading && !loading && (realtimeUser || currentUser)) {
             if (prevLevelRef.current === undefined) {
                 prevLevelRef.current = dbLevel;
             }
         }
-    }, [currentUser, authLoading, loading, dbLevel]);
+    }, [realtimeUser, currentUser, authLoading, loading, dbLevel]);
 
-    // Reset flag kuncian mutasi jika level sinkron kembali
+    // Reset kuncian mutasi jika level sinkron kembali
     useEffect(() => {
         if (userLevel === dbLevel) {
             hasTriggeredRef.current = false;
         }
     }, [userLevel, dbLevel]);
 
-    // Hanya push level ke Firestore secara background jika hitungan level baru melampaui level database
+    // Update level ke Firebase secara otomatis (baik saat level naik maupun turun)
     useEffect(() => {
-        if (!authLoading && !loading && currentUser?.uid && userLevel > dbLevel && !hasTriggeredRef.current) {
-            if (prevLevelRef.current !== undefined && userLevel > prevLevelRef.current) {
-                hasTriggeredRef.current = true;
-                prevLevelRef.current = userLevel;
+        if (!authLoading && !loading && currentUser?.uid && userLevel !== dbLevel && !hasTriggeredRef.current) {
+            hasTriggeredRef.current = true;
+            prevLevelRef.current = userLevel;
 
-                updateUserData(currentUser.uid, { level: userLevel }).catch(() => {
-                    hasTriggeredRef.current = false;
-                });
-            }
+            updateUserData(currentUser.uid, { level: userLevel }).catch(() => {
+                hasTriggeredRef.current = false;
+            });
         }
     }, [userLevel, dbLevel, currentUser?.uid, authLoading, loading]);
 
     if (authLoading || loading) return <Spinner />;
 
-    const userInitial = currentUser?.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 'U';
-    const userBorderClass = currentUser?.activeBorder || 'borderNormal';
-    const userCoins = currentUser?.koin ?? 0;
-    const score = currentUser?.score ?? 0;
+    const targetUser = realtimeUser || currentUser;
+    const userInitial = targetUser?.displayName ? targetUser.displayName.charAt(0).toUpperCase() : 'U';
+    const userBorderClass = targetUser?.activeBorder || 'borderNormal';
+    const userCoins = targetUser?.koin ?? 0;
+    const score = targetUser?.score ?? 0;
 
     return (
         <div className={styles.dashboardContainer}>
-            
             <div className={styles.fixedTopSection}>
                 <header className={styles.topHeader}>
                     <div className={styles.userGreet}>
                         <div className={`${styles.avatarContainerWrapper} ${userBorderClass}`} onClick={() => navigate('/profile')}>
-                            {currentUser?.photoURL ? (
-                                <img src={currentUser.photoURL} alt="Profile" className={styles.avatarMini} />
+                            {targetUser?.photoURL ? (
+                                <img src={targetUser.photoURL} alt="Profile" className={styles.avatarMini} />
                             ) : (
                                 <div className={styles.avatarInitialFallback}>{userInitial}</div>
                             )}
                         </div>
                         <div className={styles.greetTextWrapper}>
-                            <h2>Halo, {currentUser?.displayName?.split(' ')[0] || 'Pelajar'} 👋</h2>
+                            <h2>Halo, {targetUser?.displayName?.split(' ')[0] || 'Pelajar'} 👋</h2>
                             <div className={styles.levelProgressContainer}>
                                 <span className={styles.levelBadgeText}>Lv. {userLevel}</span>
                                 <div className={styles.expTrackSliderOuter}>
@@ -338,20 +379,15 @@ const DailyPathDashboard = () => {
                                         key={path.uidchapter} 
                                         className={styles.pathChallengeCardRow}
                                         onClick={() => {
-    // 1. Memicu mode layar penuh (Imersif) pada seluruh dokumen aplikasi
-    if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch((err) => {
-            // Mengatasi jika browser memblokir atau ada error induksi fullscreen
-        });
-    } else if (document.documentElement.webkitRequestFullscreen) { /* Safari */
-        document.documentElement.webkitRequestFullscreen();
-    } else if (document.documentElement.msRequestFullscreen) { /* IE11 */
-        document.documentElement.msRequestFullscreen();
-    }
-
-    // 2. Lakukan navigasi halaman seperti biasa
-    navigate(`/forum/list/${path.namaMap}/${path.uidchapter}`);
-}}
+                                            if (document.documentElement.requestFullscreen) {
+                                                document.documentElement.requestFullscreen().catch(() => {});
+                                            } else if (document.documentElement.webkitRequestFullscreen) {
+                                                document.documentElement.webkitRequestFullscreen();
+                                            } else if (document.documentElement.msRequestFullscreen) {
+                                                document.documentElement.msRequestFullscreen();
+                                            }
+                                            navigate(`/forum/list/${path.namaMap}/${path.uidchapter}`);
+                                        }}
                                     >
                                         <div className={styles.pathIconBoxLeft}><FaBookOpen /></div>
                                         <div className={styles.quizInfo}>

@@ -8,6 +8,9 @@ import MainLayout from './components/ui/MainLayout';
 import SubNavForum from './components/SubNavForum';
 import AdminLayout from './components/AdminLayout';
 import QuizStart from './components/ui/QuizStart';
+import ArenaByOne from './components/ui/ArenaByOne';
+import ArenaGroup from './components/ui/ArenaGroup';
+import ArenaMatch from './components/ui/ArenaMatch';
 
 // Lazy load page components
 const IndexPage = lazy(() => import('./pages/IndexPage'));
@@ -122,12 +125,42 @@ export const router = createBrowserRouter([
     </RequireAuth>
   ),
 },
+{
+  path: 'contest/1v1/arena/:lobbyId',
+  element: (
+    <RequireAuth>
+      <MainLayout>
+        <ArenaByOne />
+      </MainLayout>
+    </RequireAuth>
+  ),
+},
       {
   path: 'contest/group',
   element: (
     <RequireAuth>
       <MainLayout>
         <LobbyGroupPage />
+      </MainLayout>
+    </RequireAuth>
+  ),
+},
+{
+  path: 'contest/group/arena/:roomId',
+  element: (
+    <RequireAuth>
+      <MainLayout>
+        <ArenaGroup />
+      </MainLayout>
+    </RequireAuth>
+  ),
+},
+{
+  path: 'contest/group/arenaMatch/:roomId',
+  element: (
+    <RequireAuth>
+      <MainLayout>
+        <ArenaMatch />
       </MainLayout>
     </RequireAuth>
   ),
