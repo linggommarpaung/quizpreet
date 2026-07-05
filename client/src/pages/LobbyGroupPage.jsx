@@ -7,17 +7,20 @@ import {
     FaCheck, FaHourglassHalf, FaBookOpen, FaShieldHalved, FaShuffle, 
     FaGear, FaArrowRightArrowLeft, FaRightFromBracket,
     FaMicrophone, FaMicrophoneSlash, FaVolumeHigh, FaVolumeXmark,
-    FaSpinner, FaXmark 
+    FaSpinner, FaXmark, FaCommentDots, FaGlobe, FaLock, FaPaperPlane 
 } from 'react-icons/fa6';
 import styles from './LobbyGroupPage.module.css';
 
 import { db } from '../config/firebaseConfig'; 
 import { 
-    doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, collection 
+    doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, collection,
+    addDoc, query, orderBy
 } from 'firebase/firestore';
 
 // 🌐 MENGIKUTI LEADERBOARD: Mendukung efek border avatar toko secara realtime
 import '../components/border.css'; 
+import arenaStyle from '../components/ui/ArenaMatch.module.css'; 
+import groupStyle from '../components/ui/ArenaGroup.module.css';
 
 const LobbyGroupPage = () => {
     const { currentUser } = useAuth();
@@ -37,12 +40,24 @@ const LobbyGroupPage = () => {
     const [selectedSubject, setSelectedSubject] = useState('mtk');
     const [maxMembers, setMaxMembers] = useState(5);
     const [gameMode, setGameMode] = useState('study'); 
-    const [matchType, setMatchType] = useState('custom'); 
 
     // State Realtime Data & Voice Chat Controls
     const [lobbyData, setLobbyData] = useState(null);
     const [isSpeakerOn, setIsSpeakerOn] = useState(false);
     const [isMicOn, setIsMicOn] = useState(false);
+
+    // ==================== 💬 STATE CHAT LOBBY ====================
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [chatInput, setChatInput] = useState('');
+    const [chatScope, setChatScope] = useState('team'); 
+    const [messages, setMessages] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const chatEndRef = useRef(null);
+    
+    // Draggable Floating Chat Button
+    const [chatBtnPos, setChatBtnPos] = useState({ x: window.innerWidth - 70, y: window.innerHeight - 150 });
+    const isDraggingRef = useRef(false);
+    const dragOffsetRef = useRef({ x: 0, y: 0 });
 
     // WebRTC Refs
     const localStreamRef = useRef(null);
@@ -94,6 +109,66 @@ const LobbyGroupPage = () => {
 
         return () => unsubscribe();
     }, [roomId, currentUser, navigate]);
+
+// ==================== 💬 LISTENER CHAT LOBBY ====================
+useEffect(() => {
+    if (!roomId || !hasJoinedRoom.current || !lobbyData) return;
+
+    let myTeam = 'all';
+    if (lobbyData.gameMode === 'competition') {
+        const inA = lobbyData.teamA?.some(m => m.uid === currentUser.uid);
+        const inB = lobbyData.teamB?.some(m => m.uid === currentUser.uid);
+        if (inA) myTeam = 'A';
+        if (inB) myTeam = 'B';
+    }
+
+    const chatRef = collection(db, 'lobbyGroups', roomId.toUpperCase(), 'chats');
+    const q = query(chatRef, orderBy('timestamp', 'asc'));
+
+    // 🔒 Catat waktu saat halaman/lobby pertama kali di-load
+    const componentLoadTime = Date.now();
+
+    const unsubscribeChat = onSnapshot(q, (snapshot) => {
+        const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const filtered = msgs.filter(msg => 
+            lobbyData.gameMode === 'study' || msg.scope === 'all' || (msg.scope === 'team' && msg.senderTeam === myTeam)
+        );
+
+        // 🔔 LOGIKA NOTIFIKASI SINKRONISASI
+        if (snapshot.docChanges().length > 0) {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === 'added') {
+                    const newMsg = change.doc.data();
+                    
+                    // Ambil waktu kirim pesan (convert jika berbentuk serverTimestamp/Object)
+                    const msgTime = newMsg.timestamp?.toMillis 
+                        ? newMsg.timestamp.toMillis() 
+                        : (newMsg.timestamp || Date.now());
+
+                    // Khusus mode belajar, jika chat sedang tertutup dan pengirim bukan kita
+                    if (lobbyData.gameMode === 'study' && newMsg.senderUid !== currentUser?.uid && !isChatOpen && msgTime > componentLoadTime) {
+                        setUnreadCount(prev => prev + 1);
+                    }
+                }
+            });
+        }
+
+        setMessages(filtered);
+        if (chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+
+    return () => unsubscribeChat();
+}, [roomId, lobbyData?.gameMode, lobbyData?.teamA, lobbyData?.teamB, currentUser, isChatOpen]); // Tambahkan isChatOpen ke dependency
+
+// Sinkronisasi reset notifikasi saat chat dibuka di lobby
+useEffect(() => {
+    if (isChatOpen) {
+        setUnreadCount(0);
+    }
+}, [isChatOpen]);
+
 
     // ==================== 🔊 LISTENER 2: HANDSHAKE SIGNALLING WEBRTC ====================
     useEffect(() => {
@@ -335,6 +410,48 @@ const LobbyGroupPage = () => {
         }
     };
 
+
+    // ==================== 💬 HANDLER CHAT LOBBY ====================
+    const handlePointerDown = (e) => {
+        isDraggingRef.current = true;
+        dragOffsetRef.current = { x: e.clientX - chatBtnPos.x, y: e.clientY - chatBtnPos.y };
+        e.target.setPointerCapture(e.pointerId);
+    };
+    const handlePointerMove = (e) => {
+        if (!isDraggingRef.current) return;
+        let newX = Math.max(10, Math.min(window.innerWidth - 60, e.clientX - dragOffsetRef.current.x));
+        let newY = Math.max(10, Math.min(window.innerHeight - 60, e.clientY - dragOffsetRef.current.y));
+        setChatBtnPos({ x: newX, y: newY });
+    };
+    const handlePointerUp = (e) => { isDraggingRef.current = false; };
+
+    const handleSendChatMessage = async (e) => {
+        e.preventDefault();
+        if (!chatInput.trim() || !roomId || !lobbyData) return;
+
+        let myTeam = 'all';
+        if (lobbyData.gameMode === 'competition') {
+            const inA = lobbyData.teamA?.some(m => m.uid === currentUser.uid);
+            if (inA) myTeam = 'A';
+            else myTeam = 'B';
+        }
+
+        try {
+            const chatRef = collection(db, 'lobbyGroups', roomId.toUpperCase(), 'chats');
+            await addDoc(chatRef, {
+                senderUid: currentUser.uid,
+                senderName: currentUser.displayName || 'Rekan',
+                text: chatInput.trim(),
+                scope: lobbyData.gameMode === 'study' ? 'all' : chatScope,
+                senderTeam: myTeam,
+                timestamp: Date.now()
+            });
+            setChatInput('');
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     // ==================== 🛠... RE-CHECK / TOGGLE READY LOGIC ====================
     const handleToggleReady = async () => {
         if (!roomId || !lobbyData) return;
@@ -438,7 +555,7 @@ const LobbyGroupPage = () => {
             subject: selectedSubject,
             maxMembers,
             gameMode,
-            matchType,
+            matchType: 'custom', // Selalu dipaksa custom match berdasarkan instruksi terbaru
             status: 'lobby',
             createdAt: Date.now(),
             members: gameMode === 'study' ? [newUserData] : [],
@@ -687,8 +804,9 @@ const LobbyGroupPage = () => {
             ? lobbyData?.members?.every(m => m.uid === (lobbyData?.members[0]?.uid) ? true : m.isReady)
             : [...(lobbyData?.teamA || []), ...(lobbyData?.teamB || [])].every(m => m.uid === (lobbyData?.teamA[0]?.uid) ? true : m.isReady);
 
+        // SYARAT BARU UNTUK STUDY: HARUS PENUH (currentTotalPlayers === maxTotalCapacity) BARU BISA START
         const isRoomReadyToStart = isStudyMode 
-            ? (currentTotalPlayers >= 2 && allUsersReady)
+            ? (currentTotalPlayers === maxTotalCapacity && allUsersReady)
             : (isSlotFull && captainsOk && allUsersReady);
 
         const myLobbyProfile = isStudyMode 
@@ -746,7 +864,7 @@ const LobbyGroupPage = () => {
                 <div className={styles.metaBadgeHorizontalFlex}>
                     <span className={styles.modeIndicatorTag} style={{ backgroundColor: isStudyMode ? '#10b981' : '#7c3aed' }}>
                         {isStudyMode ? <FaBookOpen /> : <FaShieldHalved />} 
-                        {isStudyMode ? 'Belajar Bareng' : `Kompetisi (${lobbyData?.matchType?.toUpperCase()})`}
+                        {isStudyMode ? 'Belajar Bareng' : 'Kompetisi Tim'}
                     </span>
                     <span className={styles.subjectIndicatorTag}>
                         {currentSubject?.icon} {currentSubject?.name}
@@ -771,7 +889,7 @@ const LobbyGroupPage = () => {
 
                 {isStudyMode ? (
                     <div className={styles.singleCasualGroupContainer}>
-                        <h3><FaUsers /> Anggota Kelompok Belajar ({lobbyData?.members?.length || 0})</h3>
+                        <h3><FaUsers /> Anggota Kelompok Belajar ({lobbyData?.members?.length || 0} / {maxTotalCapacity})</h3>
                         <div className={styles.casualMembersGrid}>
                             {lobbyData?.members?.map((user, index) => (
                                 <div key={user.uid} className={styles.memberAvatarCardRow}>
@@ -829,44 +947,31 @@ const LobbyGroupPage = () => {
                         <div className={styles.factionTeamColumnBlock}>
                             <div className={styles.factionColumnHeaderRow}>
                                 <h3>🔴 TIM BETA ({lobbyData?.teamB?.length || 0}/{lobbyData?.maxMembers})</h3>
-                                {lobbyData?.matchType === 'custom' ? (
-                                    <div style={{ display: 'flex', gap: '4px' }}>
-                                        <button className={styles.teamSwitchActionBtn} style={{backgroundColor: '#ef4444'}} onClick={() => handleSwitchTeam('B')}>
-                                            <FaArrowRightArrowLeft /> Masuk
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button className={styles.teamSwitchActionBtn} style={{backgroundColor: '#ef4444'}} onClick={() => handleSwitchTeam('B')}>
+                                        <FaArrowRightArrowLeft /> Masuk
+                                    </button>
+                                    {lobbyData?.teamB?.some(m => m.uid === currentUser.uid) && (
+                                        <button 
+                                            className={styles.teamSwitchActionBtn} 
+                                            style={{ backgroundColor: lobbyData?.teamB?.find(m => m.uid === currentUser.uid)?.isCaptain ? '#ef4444' : '#eab308' }} 
+                                            onClick={() => handleBecomeCaptain('B')}
+                                        >
+                                            {lobbyData?.teamB?.find(m => m.uid === currentUser.uid)?.isCaptain ? 'Copot Jabatan' : 'Jadi Kapten'}
                                         </button>
-                                        {lobbyData?.teamB?.some(m => m.uid === currentUser.uid) && (
-                                            <button 
-                                                className={styles.teamSwitchActionBtn} 
-                                                style={{ backgroundColor: lobbyData?.teamB?.find(m => m.uid === currentUser.uid)?.isCaptain ? '#ef4444' : '#eab308' }} 
-                                                onClick={() => handleBecomeCaptain('B')}
-                                            >
-                                                {lobbyData?.teamB?.find(m => m.uid === currentUser.uid)?.isCaptain ? 'Copot Jabatan' : 'Jadi Kapten'}
-                                            </button>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <span className={styles.lockInfoLabel}>Terkunci (Acak)</span>
-                                )}
+                                    )}
+                                </div>
                             </div>
                             <div className={styles.teamSlotsVerticalList}>
-                                {lobbyData?.matchType === 'random' ? (
-                                    <div className={styles.matchmakingSearchingFallback}>
-                                        <FaShuffle className={styles.spinningIconElement} />
-                                        <p>Mencari musuh global otomatis saat game dimulai...</p>
+                                {lobbyData?.teamB?.map((user) => (
+                                    <div key={user.uid} className={styles.compactUserCardItem} style={{ borderLeft: user.isReady ? '4px solid #10b981' : '4px solid #f59e0b' }}>
+                                        {renderMemberAvatar(user, 0, false, styles.lobbyListAvatarFrame)}
+                                        <h4>{user.name}</h4>
                                     </div>
-                                ) : (
-                                    <>
-                                        {lobbyData?.teamB?.map((user) => (
-                                            <div key={user.uid} className={styles.compactUserCardItem} style={{ borderLeft: user.isReady ? '4px solid #10b981' : '4px solid #f59e0b' }}>
-                                                {renderMemberAvatar(user, 0, false, styles.lobbyListAvatarFrame)}
-                                                <h4>{user.name}</h4>
-                                            </div>
-                                        ))}
-                                        {Array.from({ length: Math.max(0, (lobbyData?.maxMembers || 5) - (lobbyData?.teamB?.length || 0)) }).map((_, i) => (
-                                            <div key={`empty-b-${i}`} className={styles.emptySlotPlaceholder}>Slot Musuh Kosong</div>
-                                        ))}
-                                    </>
-                                )}
+                                ))}
+                                {Array.from({ length: Math.max(0, (lobbyData?.maxMembers || 5) - (lobbyData?.teamB?.length || 0)) }).map((_, i) => (
+                                    <div key={`empty-b-${i}`} className={styles.emptySlotPlaceholder}>Slot Musuh Kosong</div>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -892,6 +997,105 @@ const LobbyGroupPage = () => {
                             <span>Menunggu pemimpin kelompok memulai sesi...</span>
                         </div>
                     )}
+                </div>
+
+                {/* 💬 KOMPONEN FLOATING CHAT DI DALAM LOBBY */}
+<button 
+    className={arenaStyle.draggableFloatingChatBtn} 
+    style={{ left: chatBtnPos.x, top: chatBtnPos.y, position: 'fixed', zIndex: 1000 }}
+    onPointerDown={handlePointerDown}
+    onPointerMove={handlePointerMove}
+    onPointerUp={handlePointerUp}
+    onClick={() => {
+        if (!isDraggingRef.current) {
+            setIsChatOpen(true);
+            setUnreadCount(0); // Bersihkan notifikasi saat diklik[span_5](start_span)[span_5](end_span)
+        }
+    }}
+>
+    <FaCommentDots />
+    {/* 🔴 Rendernya hanya muncul jika dalam mode 'study' dan ada pesan baru[span_6](start_span)[span_6](end_span) */}
+    {lobbyData?.gameMode === 'study' && unreadCount > 0 && (
+        <span className={groupStyle.redBadgeNotification}>{unreadCount}</span>
+    )}
+</button>
+
+
+                <div className={`${arenaStyle.floatingChatOverlayDrawer} ${isChatOpen ? arenaStyle.chatDrawerOpen : ''}`}>
+                    <div className={arenaStyle.sidePanelChatComponent}>
+                        <div className={arenaStyle.panelChatHeader}>
+                            <div>
+                                <h3>Obrolan Ruang Tunggu</h3>
+                                <span className={arenaStyle.secretSecurityHint}>
+                                    {/* Menggunakan ?. agar aman saat lobbyData masih null */}
+                                    {lobbyData?.gameMode === 'study' ? <><FaGlobe /> Ruang Global</> : (chatScope === 'team' ? <><FaLock /> Internal Tim</> : <><FaGlobe /> Saringan Semua</>)}
+                                </span>
+                            </div>
+                            <button className={arenaStyle.closeChatComponentBtn} onClick={() => setIsChatOpen(false)}>
+                                <FaXmark />
+                            </button>
+                        </div>
+
+                     <div className={arenaStyle.chatMessagesListContainer}>
+    {messages.map((msg) => {
+        const isMe = msg.senderUid === currentUser?.uid;
+
+        // 🌟 JIKA MODE BELAJAR: Pakai style melengkung cantik dari ArenaGroup (groupStyle)
+        if (lobbyData?.gameMode === 'study') {
+            return (
+                <div 
+                    key={msg.id} 
+                    className={`${groupStyle.messageBubble} ${isMe ? groupStyle.msgSent : groupStyle.msgReceived}`}
+                    style={{ display: 'flex', flexDirection: 'column', marginBottom: '8px' }}
+                >
+                    {!isMe && <span className={groupStyle.senderName}>{msg.senderName}</span>}
+                    <div className={arenaStyle.msgBodyText}>{msg.text}</div>
+                </div>
+            );
+        }
+
+        // 🛡️ JIKA MODE KOMPETISI: Biarkan tetap menggunakan style ArenaMatch (arenaStyle) yang sudah aman
+        return (
+            <div 
+                key={msg.id} 
+                className={`${arenaStyle.msgBubbleRow} ${isMe ? arenaStyle.bubbleSent : arenaStyle.bubbleReceived} ${msg.scope === 'all' ? arenaStyle.bubbleScopeAll : ''}`}
+            >
+                <span className={arenaStyle.msgNameTitleLabel}>
+                    {msg.senderName} `(${msg.scope === 'all' ? 'SEMUA' : `TIM ${msg.senderTeam}`})`
+                </span>
+                <div className={arenaStyle.msgBodyText}>{msg.text}</div>
+            </div>
+        );
+    })}
+    <div ref={chatEndRef} />
+</div>
+
+
+                        <form className={arenaStyle.chatInputFlexForm} onSubmit={handleSendChatMessage}>
+                            {lobbyData?.gameMode === 'competition' && (
+                                <select 
+                                    className={arenaStyle.scopeSelectorDropdown}
+                                    value={chatScope}
+                                    onChange={(e) => setChatScope(e.target.value)}
+                                >
+                                    <option value="team">Team</option>
+                                    <option value="all">Semua</option>
+                                </select>
+                            )}
+                            
+                            <input 
+                                type="text" 
+                                className={arenaStyle.chatTextInputField}
+                                placeholder="Ketik obrolan..."
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                            />
+                            <button type="submit" className={arenaStyle.chatSendActionBtn}>
+                                <FaPaperPlane />
+                            </button>
+                        </form>
+                    </div>
+                    <div className={arenaStyle.chatClickableBackdropRight} onClick={() => setIsChatOpen(false)} />
                 </div>
 
                 {selectedAvatar && (
@@ -964,22 +1168,6 @@ const LobbyGroupPage = () => {
                             </div>
                         </div>
                     </div>
-
-                    {gameMode === 'competition' && (
-                        <div className={styles.formElementFieldGroup}>
-                            <label><FaGear /> Pengaturan Pencarian Musuh:</label>
-                            <div className={styles.customRadioDualFlexGrid}>
-                                <div className={`${styles.radioSelectionOptionBox} ${matchType === 'custom' ? styles.boxSelectedActivePurple : ''} ${isLoading ? styles.disabledBox : ''}`} onClick={() => !isLoading && setMatchType('custom')}>
-                                    <FaUsers />
-                                    <div><h4>Custom Match</h4><p>Musuh masuk lewat 1 kode room.</p></div>
-                                </div>
-                                <div className={`${styles.radioSelectionOptionBox} ${matchType === 'random' ? styles.boxSelectedActiveBlue : ''} ${isLoading ? styles.disabledBox : ''}`} onClick={() => !isLoading && setMatchType('random')}>
-                                    <FaShuffle />
-                                    <div><h4>Random Match</h4><p>Otomatis cari lawan dari luar acak.</p></div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     <button className={styles.primaryTriggerExecutionBtn} onClick={handleCreateGroupRoom} disabled={isLoading}>
                         {isLoading ? <><FaSpinner className={styles.spinningIconElement} /> Membuat Sesi...</> : '🚀 Buat Ruangan Grup Sekarang'}

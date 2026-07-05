@@ -106,7 +106,7 @@
 
 .vsDividerText { font-weight: 900; font-size: 0.75rem; color: #94a3b8; }
 
-/* Arena Split Area */
+/* Arena Split & Gameplay Layout Setup */
 .mainInteractiveSplitArea {
     flex: 1;
     display: flex;
@@ -115,9 +115,16 @@
     width: 100%;
 }
 
-.questionCardSurfacePanel {
+.gamePlayZoneContainer {
     width: 100%;
     max-width: 580px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Jarak terpisah antara div soal dan div jawaban pilihan */
+}
+
+/* 📄 DIV SOAL TERPISAH (Efek Lembaran Kertas Terbuka 3D) */
+.isolatedQuestionSurfacePanel {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
@@ -125,12 +132,32 @@
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    position: relative;
+    gap: 10px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    
+    /* Efek Animasi Lembaran Masuk (3D Flip Page Fold Entrada) */
+    transform-origin: top center;
+    animation: pageFlipFoldOpen 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    backface-visibility: hidden;
 }
 
-:global(.dark) .questionCardSurfacePanel {
+:global(.dark) .isolatedQuestionSurfacePanel {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 🗂️ DIV PILIHAN JAWABAN TERPISAH */
+.isolatedOptionsPanelSurface {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    box-sizing: border-box;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.4s ease-out;
+}
+
+:global(.dark) .isolatedOptionsPanelSurface {
     background: #1e293b;
     border-color: rgba(255, 255, 255, 0.05);
 }
@@ -140,7 +167,7 @@
 .captainCrownBadge { background: #eab308; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
 .actualQuestionText { font-size: 1.1rem; font-weight: 600; line-height: 1.4; margin: 0; }
 
-/* 🟥 DESAIN TOMBOL BUZZER 3D FISIK BULAT ASLI */
+/* 🟥 DESAIN TOMBOL BUZZER 3D */
 .buzzInFaseZone { display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 10px 0; }
 .buzzer3DWrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
@@ -225,9 +252,10 @@
 .captainLockFinalAnswerBtn {
     background: linear-gradient(135deg, #10b981, #059669);
     color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 6px;
+    width: 100%;
 }
 
-/* 🌀 ANIMASI WAITING AREA MODERN UNTUK TIM MENUNGGU */
+/* 🌀 ANIMASI WAITING AREA MODERN */
 .enemyTurnCardWaiting {
     display: flex;
     flex-direction: column;
@@ -238,7 +266,6 @@
     border-radius: 12px;
     text-align: center;
     border: 1px dashed #cbd5e1;
-    animation: fadeIn 0.3s ease-out;
 }
 
 :global(.dark) .enemyTurnCardWaiting {
@@ -259,18 +286,8 @@
     animation: wavePulse 2s infinite ease-in-out;
 }
 
-.waveCoreInside {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #2563eb;
-}
-
-.waitingSubtext {
-    font-size: 0.8rem;
-    color: #64748b;
-    margin: 4px 0 0 0;
-}
+.waveCoreInside { width: 24px; height: 24px; border-radius: 50%; background: #2563eb; }
+.waitingSubtext { font-size: 0.8rem; color: #64748b; margin: 4px 0 0 0; }
 
 /* 💬 TOMBOL CHAT NGAMBANG DRAGGABLE */
 .draggableFloatingChatBtn {
@@ -288,14 +305,10 @@
     justify-content: center;
     font-size: 1.3rem;
     z-index: 99999;
-    touch-action: none; /* Cegah scroll browser saat dragging */
+    touch-action: none;
 }
 
-.draggableFloatingChatBtn:active {
-    cursor: grabbing;
-}
-
-/* 💬 SLIDE DRAWER COMPACT NEMPEL DI KIRI */
+/* 💬 SLIDE DRAWER COMPACT NEMPEL DI KIRI DENGAN BACKGROUD TEMA ADAPTIF */
 .floatingChatOverlayDrawer {
     position: fixed;
     top: 0; left: -100%; bottom: 0;
@@ -305,67 +318,229 @@
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.chatDrawerOpen {
-    left: 0;
-}
+.chatDrawerOpen { left: 0; }
 
+/* Layout Flex Column Hebat mencegah bug Hilangnya Baris Input Saat Virtual Keyboard Mobile Muncul */
 .sidePanelChatComponent {
     width: 100%;
     max-width: 310px;
-    background: #1e293b;
-    color: white;
+    background: #ffffff; 
+    color: #0f172a;      
     height: 100%;
     display: flex;
     flex-direction: column;
     padding: 14px;
     box-sizing: border-box;
-    box-shadow: 5px 0 25px rgba(0,0,0,0.3);
+    box-shadow: 5px 0 25px rgba(0,0,0,0.15);
 }
 
-.chatClickableBackdropRight {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
+:global(.dark) .sidePanelChatComponent {
+    background: #111827; 
+    color: #f8fafc;      
+    box-shadow: 5px 0 25px rgba(0,0,0,0.4);
 }
 
-.panelChatHeader { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; }
-.closeChatComponentBtn { background: transparent; border: none; color: white; font-size: 1.1rem; cursor: pointer; }
+.chatClickableBackdropRight { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px); flex: 1; }
+.panelChatHeader { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+:global(.dark) .panelChatHeader { border-bottom-color: rgba(255,255,255,0.08); }
+
+.closeChatComponentBtn { background: transparent; border: none; color: inherit; font-size: 1.1rem; cursor: pointer; }
 .chatMessagesListContainer { flex: 1; overflow-y: auto; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
 
 .msgBubbleRow { max-width: 85%; padding: 6px 10px; border-radius: 8px; font-size: 0.8rem; }
-.bubbleSent { background: #2563eb; align-self: flex-end; }
-.bubbleReceived { background: #334155; align-self: flex-start; }
-.bubbleScopeAll { background: #d97706 !important; }
-.msgNameTitleLabel { font-size: 0.6rem; color: #94a3b8; display: block; font-weight: bold; }
+.bubbleSent { background: #2563eb; color: white; align-self: flex-end; }
+.bubbleReceived { background: #f1f5f9; color: #0f172a; align-self: flex-start; }
+:global(.dark) .bubbleReceived { background: #334155; color: white; }
+.bubbleScopeAll { background: #d97706 !important; color: white; }
+.secretSecurityHint { font-size: 0.65rem; color: #64748b; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
 
-.chatInputFlexForm { display: flex; gap: 4px; align-items: center; }
-.scopeSelectorDropdown { background: #0f172a; color: white; border: 1px solid #475569; padding: 8px 4px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
-.chatTextInputField { flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; color: white; font-size: 0.8rem; }
-.chatSendActionBtn { background: #2563eb; border: none; color: white; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-/* 🚪 MODAL CUSTOM GLASS */
-.customConfirmCard, .winnerPodiumCardPopup, .immersiveModalCard {
-    background: #ffffff; padding: 20px; border-radius: 16px; max-width: 300px; width: 90%; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); animation: scaleUp 0.2s ease-out;
+/* Perbaikan mutlak form input di paling bawah komponen agar tidak terpotong */
+.chatInputFlexForm { 
+    display: flex; 
+    gap: 6px; 
+    align-items: center; 
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+    background: inherit;
 }
-:global(.dark) .customConfirmCard, :global(.dark) .winnerPodiumCardPopup, :global(.dark) .immersiveModalCard { background: #1e293b; color: white; }
+:global(.dark) .chatInputFlexForm { border-top-color: rgba(255,255,255,0.08); }
+
+.scopeSelectorDropdown { background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; padding: 8px 4px; border-radius: 6px; font-size: 0.75rem; }
+:global(.dark) .scopeSelectorDropdown { background: #0f172a; color: white; border-color: #475569; }
+
+.chatTextInputField { flex: 1; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; color: #0f172a; font-size: 0.8rem; }
+:global(.dark) .chatTextInputField { background: #0f172a; border-color: #334155; color: white; }
+.chatSendActionBtn { background: #2563eb; border: none; color: white; width: 36px; height: 36px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+/* 🏆 ROMBAK TOTAL MODAL MATCH COMPLETED - MODEL CARD SCREENSHOT (Dukungan Eksport Gambar Tangguh) */
+.vsStyleScorePodiumCard {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    color: #ffffff;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 420px;
+    padding: 30px 24px;
+    box-sizing: border-box;
+    text-align: center;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+}
+
+.badgeTopMatchResult {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+
+.versusRowShowdownDisplay {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+}
+
+.teamIdentityShowdownBlock {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 10px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.isUltimateWinnerglow {
+    background: rgba(16, 185, 129, 0.08) !important;
+    border-color: #10b981 !important;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+}
+
+.showdownAvatarCircle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #2563eb;
+    color: white;
+    font-weight: 900;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.teamIdentityShowdownBlock h4 { margin: 0; font-size: 0.8rem; font-weight: 700; color: #94a3b8; }
+.teamIdentityShowdownBlock h1 { margin: 0; font-size: 2.2rem; font-weight: 800; color: #ffffff; }
+
+.centerVsCrossBadgeText {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #475569;
+    font-style: italic;
+    padding: 8px;
+}
+
+.victoryCrownAnnounceStrip {
+    width: 100%;
+    background: rgba(234, 179, 8, 0.1);
+    border: 1px dashed rgba(234, 179, 8, 0.4);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: #fef08a;
+}
+
+.victoryCrownAnnounceStrip strong { color: #facc15; font-weight: 800; }
+.drawStatusStripText { color: #cbd5e1 !important; font-weight: 700; }
+
+/* 🛠️ TOMBOL DI LUAR CARD HASIL TANDING */
+.actionButtonsOutsideContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 420px;
+}
+
+.btnShareResultImage {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    transition: background 0.2s;
+}
+.btnShareResultImage:hover { background: #059669; }
+
+.btnReturnToDashboardGroup {
+    background: #334155;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+.btnReturnToDashboardGroup:hover { background: #1e293b; }
+
+/* 🚪 MODAL LAINNYA */
+.customConfirmCard, .immersiveModalCard {
+    background: #ffffff; padding: 20px; border-radius: 16px; max-width: 300px; width: 90%; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+:global(.dark) .customConfirmCard, :global(.dark) .immersiveModalCard { background: #1e293b; color: white; }
 .warningIconHeader { font-size: 2.2rem; margin-bottom: 8px; }
 .confirmModalActionButtonsFlex { display: flex; gap: 10px; margin-top: 14px; }
-.cancelExitModalBtn { flex: 1; background: #e2e8f0; border: none; padding: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-.executeExitModalBtn { flex: 1; background: #ef4444; color: white; border: none; padding: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.cancelExitModalBtn { flex: 1; background: #e2e8f0; border: none; padding: 8px; border-radius: 8px; font-weight: 600; }
+.executeExitModalBtn { flex: 1; background: #ef4444; color: white; border: none; padding: 8px; border-radius: 8px; font-weight: 600; }
 
-.trophyGlowingContainer { font-size: 2.5rem; color: #eab308; }
-.finalScoreDeclarationRow { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
-.finalBadgeScoreBox { background: #0f172a; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
-.winnerTextNotice { font-size: 0.95rem; font-weight: bold; color: #10b981; }
-.backToLobbyGroupDashboardBtn { background: #2563eb; color: white; border: none; width: 100%; padding: 8px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-
-.immersiveModalOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 100001; }
-.immersivePhysicalCircularBtn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+.immersiveModalOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 100001; padding: 20px; box-sizing: border-box; }
+.immersivePhysicalCircularBtn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; }
 .spinningIconElement { animation: spin 1s linear infinite; }
 
+/* KEYFRAMES ANIMASI */
 @keyframes spin { 100% { transform: rotate(360deg); } }
-@keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes blinkText { from { opacity: 0.5; } to { opacity: 1; } }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes wavePulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.2); } 50% { transform: scale(1.08); box-shadow: 0 0 0 12px rgba(37, 99, 235, 0); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes wavePulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.2); } 50% { transform: scale(1.04); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); } }
 @keyframes pulseGlow { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+/* 📖 Efek Lembaran Buku Terbuka 3D (3D Page Flip Entrada) */
+@keyframes pageFlipFoldOpen {
+    0% {
+        transform: perspective(1000px) rotateX(-35deg) scale(0.93);
+        opacity: 0;
+        box-shadow: 0 0px 0px rgba(0,0,0,0);
+    }
+    100% {
+        transform: perspective(1000px) rotateX(0deg) scale(1);
+        opacity: 1;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    }
+}

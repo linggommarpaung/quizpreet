@@ -9,8 +9,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { 
     FaArrowLeft, FaXmark, FaPaperPlane, FaClock, FaFire, FaLock, 
-    FaCommentDots, FaGlobe, FaSpinner, FaTrophy
+    FaCommentDots, FaGlobe, FaSpinner, FaTrophy, FaShareNodes, FaHouse
 } from 'react-icons/fa6';
+import html2canvas from 'html2canvas';
 import styles from './ArenaMatch.module.css';
 
 const ArenaMatch = () => {
@@ -31,6 +32,7 @@ const ArenaMatch = () => {
     const [chatScope, setChatScope] = useState('team'); 
     const [messages, setMessages] = useState([]);
     const chatEndRef = useRef(null);
+    const modalCaptureRef = useRef(null);
 
     // Draggable Floating Chat Button Position State
     const [chatBtnPos, setChatBtnPos] = useState({ x: window.innerWidth - 70, y: window.innerHeight - 150 });
@@ -39,6 +41,7 @@ const ArenaMatch = () => {
 
     // State Internal Pilihan Jawaban Kelompok
     const [mySelectedVote, setMySelectedVote] = useState(null);
+    const [isSharing, setIsSharing] = useState(false);
 
     // Bank Data Soal Kompetisi
     const poolQuestions = [
@@ -75,7 +78,6 @@ const ArenaMatch = () => {
 
             if (data.matchEndedForced) return; 
 
-            // Identifikasi Posisi Tim & Role Kapten
             const inTeamA = data.teamA?.some(m => m.uid === currentUser.uid);
             const inTeamB = data.teamB?.some(m => m.uid === currentUser.uid);
 
@@ -87,7 +89,6 @@ const ArenaMatch = () => {
                 setIsCaptain(data.teamB.find(m => m.uid === currentUser.uid)?.isCaptain || false);
             }
 
-            // Inisialisasi State Awal Pertandingan di Database jika Kosong
             if (data.currentQuestionIndex === undefined) {
                 updateDoc(roomRef, {
                     currentQuestionIndex: 0,
@@ -97,7 +98,7 @@ const ArenaMatch = () => {
                     buzzWinner: null,
                     votes: {},
                     wrongAnswersEliminated: [],
-                    currentTimerValue: 48, // Menyimpan sisa detik secara global di db
+                    currentTimerValue: 48,
                     matchEndedForced: false,
                     winnerDeclarationText: ""
                 });
@@ -111,12 +112,11 @@ const ArenaMatch = () => {
     useEffect(() => {
         if (!lobbyData || lobbyData.phase === 'buzz') return;
 
-        // Cek apakah Kapten yang sedang login saat ini adalah kapten dari tim yang memegang hak jawab
         const isCurrentActiveCaptain = 
             (lobbyData.phase === 'discussion' && lobbyData.buzzWinner === myTeam && isCaptain) ||
             (lobbyData.phase === 'steal' && lobbyData.buzzWinner !== myTeam && isCaptain);
 
-        if (!isCurrentActiveCaptain) return; // Anggota biasa & tim musuh diam saja, tidak menjalankan interval
+        if (!isCurrentActiveCaptain) return;
 
         const interval = setInterval(async () => {
             const currentTime = lobbyData.currentTimerValue !== undefined ? lobbyData.currentTimerValue : 48;
@@ -124,10 +124,8 @@ const ArenaMatch = () => {
             const qIndex = lobbyData.currentQuestionIndex || 0;
 
             if (currentTime > 0) {
-                // Kapten mengurangi waktu di db tiap detik sebagai patokan tunggal
                 await updateDoc(roomRef, { currentTimerValue: currentTime - 1 });
             } else {
-                // WAKTU HABIS (0 DETIK) -> Dieksekusi otomatis dari sisi Kapten Aktif
                 clearInterval(interval);
 
                 if (lobbyData.phase === 'discussion') {
@@ -140,7 +138,7 @@ const ArenaMatch = () => {
                         [scoreField]: finalScore,
                         phase: 'steal',
                         votes: {},
-                        currentTimerValue: 48 // Reset ke 48 detik khusus untuk tim musuh (Fase Steal)
+                        currentTimerValue: 48
                     });
                 } else if (lobbyData.phase === 'steal') {
                     const stealingTeam = lobbyData.buzzWinner === 'A' ? 'B' : 'A';
@@ -221,9 +219,9 @@ const ArenaMatch = () => {
     // ==================== 🎮 5. LOGIC MEKANIK PERTANDINGAN ====================
     const handleTriggerGameOverFinal = async (scoreA, scoreB) => {
         const roomRef = doc(db, 'lobbyGroups', roomId.toUpperCase());
-        let declaration = "Pertandingan Berakhir Seri! 🤝";
-        if (scoreA > scoreB) declaration = "TIM ALFA MENANG! 🏆";
-        if (scoreB > scoreA) declaration = "TIM BETA MENANG! 🏆";
+        let declaration = "DRAW";
+        if (scoreA > scoreB) declaration = "TIM ALFA";
+        if (scoreB > scoreA) declaration = "TIM BETA";
 
         await updateDoc(roomRef, {
             matchEndedForced: true,
@@ -240,7 +238,7 @@ const ArenaMatch = () => {
                 phase: 'discussion',
                 buzzWinner: myTeam,
                 votes: {},
-                currentTimerValue: 48 // Set waktu mulai 48 detik di DB
+                currentTimerValue: 48
             });
             toast.success(`Tim ${myTeam === 'A' ? 'Alfa' : 'Beta'} Mengunci Soal! 🚨`);
         } catch (err) {
@@ -310,7 +308,7 @@ const ArenaMatch = () => {
                         phase: 'steal',
                         votes: {},
                         wrongAnswersEliminated: [mySelectedVote],
-                        currentTimerValue: 48 // Berikan 48 detik murni untuk tim penantang
+                        currentTimerValue: 48
                     });
                     setMySelectedVote(null);
                     toast.error("JAWABAN SALAH! -50 Poin. Soal dilempar ke lawan! ⚠️");
@@ -385,6 +383,34 @@ const ArenaMatch = () => {
         }
     };
 
+    // Pemicu Tangkapan Layar Card Menjadi PNG / JPG untuk Share
+    const handleExportCardToImage = async () => {
+        if (!modalCaptureRef.current || isSharing) return;
+        setIsSharing(true);
+        const toastId = toast.loading("Sedang merender lembar kemenangan...");
+
+        try {
+            const canvas = await html2canvas(modalCaptureRef.current, {
+                backgroundColor: null,
+                useCORS: true,
+                scale: 2,
+                logging: false
+            });
+            const imageUri = canvas.toDataURL("image/png");
+            
+            const link = document.createElement('a');
+            link.download = `MATCH-${roomId.toUpperCase()}-RESULT.png`;
+            link.href = imageUri;
+            link.click();
+            toast.success("Gambar berhasil diunduh!", { id: toastId });
+        } catch (error) {
+            console.error(error);
+            toast.error("Gagal mengekspor gambar arena.", { id: toastId });
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
     const handleExecuteCustomExitLobby = async () => {
         if (!roomId || !lobbyData) return;
         const roomRef = doc(db, 'lobbyGroups', roomId.toUpperCase());
@@ -396,7 +422,7 @@ const ArenaMatch = () => {
                 toast.success("Pertandingan dibubarkan oleh Host Utama!");
                 navigate('/contest/group');
             } else if (isCaptain) {
-                const enemyWinText = myTeam === 'A' ? "TIM BETA MENANG (Tim Alfa Menyerah) 🏆" : "TIM ALFA MENANG (Tim Beta Menyerah) 🏆";
+                const enemyWinText = myTeam === 'A' ? "TIM BETA" : "TIM ALFA";
                 await updateDoc(roomRef, {
                     matchEndedForced: true,
                     winnerDeclarationText: enemyWinText
@@ -432,7 +458,7 @@ const ArenaMatch = () => {
 
     return (
         <div className={styles.arenaContainer}>
-            {/* 🔴 ACTION SCOREBOARD MINIMALIS COMPACT */}
+            {/* 🔴 ACTION SCOREBOARD */}
             <div className={styles.headerScoreboard}>
                 <button className={styles.backBtn} onClick={() => setShowExitModal(true)}>
                     <FaArrowLeft />
@@ -460,100 +486,107 @@ const ArenaMatch = () => {
                 <div style={{ width: 38 }} />
             </div>
 
-            {/* 🟡 ARENA INTERAKTIF UTAMA */}
+            {/* 🟡 ARENA INTERAKTIF UTAMA (DIV SOAL & PILIHAN TERPISAH DENGAN ANIMASI LEMBARAN) */}
             <div className={styles.mainInteractiveSplitArea}>
-                <div className={styles.questionCardSurfacePanel}>
-                    <div className={styles.questionHeaderBadgeRow}>
-                        <span className={styles.questionIndexLabel}>SOAL {qIndex + 1} / {poolQuestions.length}</span>
-                        {isCaptain && <span className={styles.captainCrownBadge}><FaFire /> KAPTEN</span>}
+                <div className={styles.gamePlayZoneContainer}>
+                    
+                    {/* 📄 DIV SOAL MANDIRI (Efek Animasi Lembaran Masuk) */}
+                    <div key={`q-card-${qIndex}`} className={styles.isolatedQuestionSurfacePanel}>
+                        <div className={styles.questionHeaderBadgeRow}>
+                            <span className={styles.questionIndexLabel}>SOAL SELEKSI {qIndex + 1} / {poolQuestions.length}</span>
+                            {isCaptain && <span className={styles.captainCrownBadge}><FaFire /> KAPTEN JAWAB</span>}
+                        </div>
+                        <h2 className={styles.actualQuestionText}>{currentQuestion?.question}</h2>
                     </div>
 
-                    <h2 className={styles.actualQuestionText}>{currentQuestion?.question}</h2>
-
-                    {/* FASE 1: REBUTAN TOMBOL BUZZER */}
-                    {lobbyData?.phase === 'buzz' && (
-                        <div className={styles.buzzInFaseZone}>
-                            <div className={styles.blurredOptionsMock}>
-                                <div className={styles.blurBar}>Pilihan jawaban disembunyikan. Klik Buzzer!</div>
-                            </div>
-                            
-                            {isCaptain ? (
-                                <div className={styles.buzzer3DWrapper}>
-                                    <button className={styles.buzzerPhysicalCircularRed} onClick={handlePressBuzzer}>
-                                        <span className={styles.buzzerInnerCore} />
-                                    </button>
-                                    <label className={styles.buzzerPressLabelText}>TAP BUZZER REBUTAN!</label>
+                    {/* 🗂️ DIV PILIHAN JAWABAN & MEKANIK TOMBOL JAWAB */}
+                    <div className={styles.isolatedOptionsPanelSurface}>
+                        {/* FASE 1: REBUTAN TOMBOL BUZZER */}
+                        {lobbyData?.phase === 'buzz' && (
+                            <div className={styles.buzzInFaseZone}>
+                                <div className={styles.blurredOptionsMock}>
+                                    <div className={styles.blurBar}>Pilihan jawaban disembunyikan. Klik Buzzer!</div>
                                 </div>
-                            ) : (
-                                <div className={styles.waitingCaptainBuzzNotification}>
-                                    <FaSpinner className={styles.spinningIconElement} />
-                                    <span>Menunggu Kapten Regu menekan buzzer...</span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* FASE 2 & 4: TIM KITA BERPIKIR / STEAL */}
-                    {isMyTeamTurn && (
-                        <div className={styles.optionsVerticalGridSystem}>
-                            {currentQuestion?.options.map((option, idx) => {
-                                const isEliminated = lobbyData?.wrongAnswersEliminated?.includes(idx);
-                                const votersForThisOption = [];
                                 
-                                if (lobbyData?.votes) {
-                                    const currentTeamList = myTeam === 'A' ? lobbyData.teamA : lobbyData.teamB;
-                                    Object.entries(lobbyData.votes).forEach(([uid, votedIdx]) => {
-                                        if (votedIdx === idx) {
-                                            const uName = currentTeamList?.find(m => m.uid === uid)?.name || "Rekan";
-                                            votersForThisOption.push(uName);
-                                        }
-                                    });
-                                }
-
-                                return (
-                                    <button 
-                                        key={idx} 
-                                        className={`${styles.optionInteractiveRowBtn} ${mySelectedVote === idx ? styles.optionSelectedLocal : ''} ${isEliminated ? styles.optionEliminatedGrey : ''}`}
-                                        onClick={() => !isEliminated && handleSelectOptionVote(idx)}
-                                        disabled={isEliminated}
-                                    >
-                                        <div className={styles.optionIndicatorLetter}>
-                                            {String.fromCharCode(65 + idx)}
-                                        </div>
-                                        <div style={{ flex: 1 }}>
-                                            <span className={styles.optionContentText}>{option}</span>
-                                            {votersForThisOption.length > 0 && (
-                                                <div className={styles.votersRowBadges}>
-                                                    {votersForThisOption.map((name, nIdx) => (
-                                                        <span key={nIdx} className={styles.voterNameTag}>👥 {name}</span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </button>
-                                );
-                            })}
-
-                            {isCaptain && (
-                                <button className={styles.captainLockFinalAnswerBtn} onClick={handleCaptainConfirmAnswer}>
-                                    ✨ Kunci Jawaban Akhir ({displayTime}s)
-                                </button>
-                            )}
-                        </div>
-                    )}
-
-                    {/* FASE ANIMASI MENUNGGU SANTUY UNTUK TIM MUSUH */}
-                    {isEnemyTeamTurn && (
-                        <div className={styles.enemyTurnCardWaiting}>
-                            <div className={styles.shimmeringWaveSphere}>
-                                <div className={styles.waveCoreInside} />
+                                {isCaptain ? (
+                                    <div className={styles.buzzer3DWrapper}>
+                                        <button className={styles.buzzerPhysicalCircularRed} onClick={handlePressBuzzer}>
+                                            <span className={styles.buzzerInnerCore} />
+                                        </button>
+                                        <label className={styles.buzzerPressLabelText}>TAP BUZZER REBUTAN!</label>
+                                    </div>
+                                ) : (
+                                    <div className={styles.waitingCaptainBuzzNotification}>
+                                        <FaSpinner className={styles.spinningIconElement} />
+                                        <span>Menunggu Kapten Regu menekan buzzer...</span>
+                                    </div>
+                                )}
                             </div>
-                            <h3>Tim Lawan Sedang Berpikir</h3>
-                            <p className={styles.waitingSubtext}>
-                                Sisa waktu mereka: <strong>{displayTime} Detik</strong>. Silakan baca soal dan siapkan strategi jawaban tim kamu jika mereka meleset!
-                            </p>
-                        </div>
-                    )}
+                        )}
+
+                        {/* FASE 2 & 4: TIM KITA BERPIKIR / STEAL */}
+                        {isMyTeamTurn && (
+                            <div className={styles.optionsVerticalGridSystem}>
+                                {currentQuestion?.options.map((option, idx) => {
+                                    const isEliminated = lobbyData?.wrongAnswersEliminated?.includes(idx);
+                                    const votersForThisOption = [];
+                                    
+                                    if (lobbyData?.votes) {
+                                        const currentTeamList = myTeam === 'A' ? lobbyData.teamA : lobbyData.teamB;
+                                        Object.entries(lobbyData.votes).forEach(([uid, votedIdx]) => {
+                                            if (votedIdx === idx) {
+                                                const uName = currentTeamList?.find(m => m.uid === uid)?.name || "Rekan";
+                                                votersForThisOption.push(uName);
+                                            }
+                                        });
+                                    }
+
+                                    return (
+                                        <button 
+                                            key={idx} 
+                                            className={`${styles.optionInteractiveRowBtn} ${mySelectedVote === idx ? styles.optionSelectedLocal : ''} ${isEliminated ? styles.optionEliminatedGrey : ''}`}
+                                            onClick={() => !isEliminated && handleSelectOptionVote(idx)}
+                                            disabled={isEliminated}
+                                        >
+                                            <div className={styles.optionIndicatorLetter}>
+                                                {String.fromCharCode(65 + idx)}
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <span className={styles.optionContentText}>{option}</span>
+                                                {votersForThisOption.length > 0 && (
+                                                    <div className={styles.votersRowBadges}>
+                                                        {votersForThisOption.map((name, nIdx) => (
+                                                            <span key={nIdx} className={styles.voterNameTag}>👥 {name}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+
+                                {isCaptain && (
+                                    <button className={styles.captainLockFinalAnswerBtn} onClick={handleCaptainConfirmAnswer}>
+                                        ✨ Kunci Jawaban Akhir ({displayTime}s)
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* FASE ANIMASI MENUNGGU TIM LAWAN */}
+                        {isEnemyTeamTurn && (
+                            <div className={styles.enemyTurnCardWaiting}>
+                                <div className={styles.shimmeringWaveSphere}>
+                                    <div className={styles.waveCoreInside} />
+                                </div>
+                                <h3>Tim Lawan Sedang Berpikir</h3>
+                                <p className={styles.waitingSubtext}>
+                                    Sisa waktu mereka: <strong>{displayTime} Detik</strong>. Siapkan strategi jawaban tim kamu jika mereka salah!
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
             </div>
 
@@ -569,14 +602,14 @@ const ArenaMatch = () => {
                 <FaCommentDots />
             </button>
 
-            {/* 💬 SLIDE DRAWER OVERLAY CHAT (NEMPEL DI SEBELAH KIRI) */}
+            {/* 💬 SLIDE DRAWER OVERLAY CHAT (Layout Flex Anti-Tenggelam Keyboard) */}
             <div className={`${styles.floatingChatOverlayDrawer} ${isChatOpen ? styles.chatDrawerOpen : ''}`}>
                 <div className={styles.sidePanelChatComponent}>
                     <div className={styles.panelChatHeader}>
                         <div>
                             <h3>Obrolan Arena</h3>
                             <span className={styles.secretSecurityHint}>
-                                {chatScope === 'team' ? <FaLock /> : <FaGlobe />} Realtime Saringan Mode
+                                {chatScope === 'team' ? <FaLock /> : <FaGlobe />} Saringan Komunikasi
                             </span>
                         </div>
                         <button className={styles.closeChatComponentBtn} onClick={() => setIsChatOpen(false)}>
@@ -612,7 +645,7 @@ const ArenaMatch = () => {
                         <input 
                             type="text" 
                             className={styles.chatTextInputField}
-                            placeholder={chatScope === 'team' ? "Obrolan rahasia kelompok..." : "Obrolan global terbuka..."}
+                            placeholder="Ketik pesan..."
                             value={chatInput}
                             onChange={(e) => setChatInput(e.target.value)}
                         />
@@ -630,7 +663,7 @@ const ArenaMatch = () => {
                     <div className={styles.customConfirmCard}>
                         <div className={styles.warningIconHeader}>⚠️</div>
                         <h3>Konfirmasi Keluar</h3>
-                        <p>Apakah kamu yakin ingin meninggalkan arena pertandingan regu?</p>
+                        <p>Apakah kamu yakin ingin meninggalkan arena pertandingan?</p>
                         <div className={styles.confirmModalActionButtonsFlex}>
                             <button className={styles.cancelExitModalBtn} onClick={() => setShowExitModal(false)}>Batal</button>
                             <button className={styles.executeExitModalBtn} onClick={handleExecuteCustomExitLobby}>Keluar</button>
@@ -639,21 +672,46 @@ const ArenaMatch = () => {
                 </div>
             )}
 
-            {/* MODAL GAME OVER */}
+            {/* 🏆 MODAL GAME OVER INTERAKTIF EPSOR IMAGE (Sesuai Gaya Desain Screenshot) */}
             {lobbyData?.matchEndedForced && (
-                <div className={styles.immersiveModalOverlay}>
-                    <div className={styles.winnerPodiumCardPopup}>
-                        <div className={styles.trophyGlowingContainer}>
-                            <FaTrophy />
+                <div className={styles.immersiveModalOverlay} style={{ flexDirection: 'column', gap: '20px' }}>
+                    
+                    {/* 🎴 CARD UTAMA YANG AKAN DI-EXPORT MENJADI JPG/PNG */}
+                    <div ref={modalCaptureRef} className={styles.vsStyleScorePodiumCard}>
+                        <div className={styles.badgeTopMatchResult}>MATCH COMPLETED</div>
+                        
+                        <div className={styles.versusRowShowdownDisplay}>
+                            <div className={`${styles.teamIdentityShowdownBlock} ${lobbyData?.winnerDeclarationText === 'TIM ALFA' ? styles.isUltimateWinnerglow : ''}`}>
+                                <div className={styles.showdownAvatarCircle}>A</div>
+                                <h4>TIM ALFA</h4>
+                                <h1>{lobbyData?.scoreTeamA}</h1>
+                            </div>
+
+                            <div className={styles.centerVsCrossBadgeText}>VS</div>
+
+                            <div className={`${styles.teamIdentityShowdownBlock} ${lobbyData?.winnerDeclarationText === 'TIM BETA' ? styles.isUltimateWinnerglow : ''}`}>
+                                <div className={styles.showdownAvatarCircle} style={{ background: '#ef4444' }}>B</div>
+                                <h4>TIM BETA</h4>
+                                <h1>{lobbyData?.scoreTeamB}</h1>
+                            </div>
                         </div>
-                        <h2>PERTANDINGAN SELESAI</h2>
-                        <div className={styles.finalScoreDeclarationRow}>
-                            <div className={styles.finalBadgeScoreBox}>ALFA: {lobbyData?.scoreTeamA}</div>
-                            <div className={styles.finalBadgeScoreBox}>BETA: {lobbyData?.scoreTeamB}</div>
+
+                        <div className={styles.victoryCrownAnnounceStrip}>
+                            {lobbyData?.winnerDeclarationText === 'DRAW' ? (
+                                <span className={styles.drawStatusStripText}>PERTANDINGAN BERAKHIR SERI 🤝</span>
+                            ) : (
+                                <span>KEMENANGAN MUTLAK: <strong>{lobbyData?.winnerDeclarationText}</strong> 🏆</span>
+                            )}
                         </div>
-                        <p className={styles.winnerTextNotice}>{lobbyData?.winnerDeclarationText}</p>
-                        <button className={styles.backToLobbyGroupDashboardBtn} onClick={() => navigate('/contest/group')}>
-                            Kembali ke Dashboard Lobby
+                    </div>
+
+                    {/* 🛠️ TOMBOL KONTROL DI LUAR CARD KEMENANGAN */}
+                    <div className={styles.actionButtonsOutsideContainer}>
+                        <button className={styles.btnShareResultImage} onClick={handleExportCardToImage} disabled={isSharing}>
+                            <FaShareNodes /> {isSharing ? 'Mengekspor...' : 'Simpan / Share Hasil'}
+                        </button>
+                        <button className={styles.btnReturnToDashboardGroup} onClick={() => navigate('/contest/group')}>
+                            <FaHouse /> Kembali ke Dashboard
                         </button>
                     </div>
                 </div>

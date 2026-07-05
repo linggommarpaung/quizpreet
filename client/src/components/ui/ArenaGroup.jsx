@@ -278,28 +278,33 @@ const ArenaGroup = () => {
 useEffect(() => {
     if (!roomId) return;
     const cleanId = roomId.trim().toUpperCase();
-    const chatCollRef = collection(db, 'lobbyGroups', cleanId, 'chats');
-    const q = query(chatCollRef, orderBy('timestamp', 'asc'));
 
-    // Catat waktu saat komponen ini pertama kali dimuat
+    // 🛠️ 1. JALUR BARU: Mengarah langsung ke sub-koleksi chats milik room utama agar sinkron
+    const chatRef = collection(db, 'lobbyGroups', cleanId, 'chats');
+    const q = query(chatRef, orderBy('timestamp', 'asc'));
+
+    // 🔒 2. FITUR NOTIFIKASI: Catat waktu saat komponen ini pertama kali dimuat
     const componentLoadTime = Date.now();
 
-    const unsubscribeChat = onSnapshot(q, (snapshot) => {
-        let loadedMsgs = [];
-        snapshot.forEach(docSnap => {
-            loadedMsgs.push({ id: docSnap.id, ...docSnap.data() });
-        });
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        // Ambil data seluruh pesan secara realtime
+        const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+        // 🔒 3. FITUR NOTIFIKASI: Deteksi jika ada pesan baru masuk saat panel chat tertutup
         if (snapshot.docChanges().length > 0) {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
                     const newMsg = change.doc.data();
                     
-                    // Ambil waktu kirim pesan (convert dari Firebase timestamp ke milidetik)
-                    const msgTime = newMsg.timestamp?.toMillis() || Date.now();
+                    // Ambil waktu kirim pesan (jika timestamp biasa gunakan fallback Date.now)
+                    const msgTime = newMsg.timestamp?.toMillis 
+                        ? newMsg.timestamp.toMillis() 
+                        : (newMsg.timestamp || Date.now());
 
-                    // HANYA tambah notifikasi jika pesan dikirim SETELAH komponen di-load, 
-                    // bukan pesan dari masa lalu, dan panel chat sedang tertutup!
+                    // HANYA tambah angka notifikasi jika:
+                    // - Pengirimnya BUKAN kita sendiri
+                    // - Panel chat sedang tertutup (!isChatOpen)
+                    // - Pesan masuk SETELAH halaman ini terbuka (msgTime > componentLoadTime)
                     if (newMsg.senderUid !== currentUser?.uid && !isChatOpen && msgTime > componentLoadTime) {
                         setUnreadCount(prev => prev + 1);
                     }
@@ -307,13 +312,20 @@ useEffect(() => {
             });
         }
 
-        setMessages(loadedMsgs);
-        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        // Set state pesan untuk dirender ke UI
+        setMessages(msgs);
+        
+        // Auto scroll ke bawah saat ada chat baru
+        setTimeout(() => {
+            if (chatEndRef.current) {
+                chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+        }, 100);
     }, (error) => {
         console.error("Gagal memuat obrolan: ", error);
     });
 
-    return () => unsubscribeChat();
+    return () => unsubscribe();
 }, [roomId, isChatOpen, currentUser]);
 
 
@@ -325,24 +337,24 @@ useEffect(() => {
 }, [isChatOpen, messages]);
 
     const handleSendChatMessage = async (e) => {
-        e.preventDefault();
-        if (!chatInput.trim() || !roomId || !currentUser) return;
+    e.preventDefault();
+    if (!chatInput.trim() || !roomId) return;
 
-        const cleanId = roomId.trim().toUpperCase();
-        const chatCollRef = collection(db, 'lobbyGroups', cleanId, 'chats');
+    try {
+        const chatRef = collection(db, 'lobbyGroups', roomId.toUpperCase(), 'chats');
+        await addDoc(chatRef, {
+            senderUid: currentUser.uid,
+            senderName: currentUser.displayName || 'Rekan',
+            text: chatInput.trim(),
+            scope: 'all', // 🌟 Tetapkan 'all' agar terbaca sebagai chat global di mode belajar
+            timestamp: Date.now()
+        });
+        setChatInput('');
+    } catch (err) {
+        console.error(err);
+    }
+};
 
-        try {
-            await addDoc(chatCollRef, {
-                senderUid: currentUser.uid,
-                senderName: currentUser.displayName || 'Rekan Tim',
-                text: chatInput.trim(),
-                timestamp: serverTimestamp()
-            });
-            setChatInput('');
-        } catch (err) {
-            console.error("Gagal mengirim chat: ", err);
-        }
-    };
 
     const handleConfirmExit = async () => {
         if (!roomId || !lobbyData || !currentUser) return;
