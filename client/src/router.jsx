@@ -27,7 +27,6 @@ const ForumPage = lazy(() => import('./pages/ForumPage'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdministratorPage = lazy(() => import('./pages/admin/AdministratorPage'));
 const QuizListPage = lazy(() => import('./pages/admin/QuizListPage'));
-const EditThemePage = lazy(() => import('./pages/EditThemePage'));
 const AddThemePage = lazy(() => import('./pages/AddThemePage'));
 const EditQuestionPage = lazy(() => import('./pages/EditQuestionPage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
@@ -287,10 +286,6 @@ export const router = createBrowserRouter([
           { path: 'administrator', element: <AdministratorPage /> },
           { path: 'quiz', element: <QuizListPage /> },
           { path: 'quiz/add-theme', element: <AddThemePage /> },
-          {
-            path: 'quiz/edit-theme/:themeId',
-            element: <EditThemePage />,
-          },
           {
             path: 'quiz/edit-question/:themeId/:unitId/:questionId',
             element: <EditQuestionPage />,
