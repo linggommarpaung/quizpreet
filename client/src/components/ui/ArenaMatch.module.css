@@ -1,0 +1,546 @@
+/* client/src/components/ui/ArenaMatch.module.css */
+
+.arenaContainer {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw; height: 100vh;
+    z-index: 99999 !important;
+    background-color: #f8fafc;
+    color: #0f172a;
+    padding: 12px;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+}
+
+:global(.dark) .arenaContainer {
+    background-color: #0f172a;
+    color: #f8fafc;
+}
+
+/* Header Scoreboard Area */
+.headerScoreboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 8px 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+:global(.dark) .headerScoreboard {
+    background-color: #1e293b;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.backBtn {
+    background: #f1f5f9;
+    border: none;
+    color: #334155;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+
+:global(.dark) .backBtn {
+    background: #334155;
+    color: white;
+}
+
+.globalScoreLayoutFlex {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.teamScoreBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 2px solid transparent;
+    min-width: 65px;
+}
+
+:global(.dark) .teamScoreBox {
+    background: #111827;
+}
+
+.myOwnTeamBorder {
+    border-color: #10b981 !important;
+}
+
+.teamTitle { font-size: 0.65rem; font-weight: 800; }
+.scoreText { margin: 0; font-size: 1.2rem; font-weight: 700; }
+
+.versusMidTimingZone { display: flex; flex-direction: column; align-items: center; }
+
+.timerBadgeContainer {
+    background: #64748b;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.timerPulseActive {
+    background: #ef4444;
+    animation: pulseGlow 1s infinite alternate;
+}
+
+.vsDividerText { font-weight: 900; font-size: 0.75rem; color: #94a3b8; }
+
+/* Arena Split & Gameplay Layout Setup */
+.mainInteractiveSplitArea {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.gamePlayZoneContainer {
+    width: 100%;
+    max-width: 580px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Jarak terpisah antara div soal dan div jawaban pilihan */
+}
+
+/* 📄 DIV SOAL TERPISAH (Efek Lembaran Kertas Terbuka 3D) */
+.isolatedQuestionSurfacePanel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    
+    /* Efek Animasi Lembaran Masuk (3D Flip Page Fold Entrada) */
+    transform-origin: top center;
+    animation: pageFlipFoldOpen 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    backface-visibility: hidden;
+}
+
+:global(.dark) .isolatedQuestionSurfacePanel {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 🗂️ DIV PILIHAN JAWABAN TERPISAH */
+.isolatedOptionsPanelSurface {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    box-sizing: border-box;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    animation: fadeIn 0.4s ease-out;
+}
+
+:global(.dark) .isolatedOptionsPanelSurface {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.questionHeaderBadgeRow { display: flex; justify-content: space-between; align-items: center; }
+.questionIndexLabel { font-size: 0.7rem; font-weight: 700; color: #64748b; }
+.captainCrownBadge { background: #eab308; color: white; font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; }
+.actualQuestionText { font-size: 1.1rem; font-weight: 600; line-height: 1.4; margin: 0; }
+
+/* 🟥 DESAIN TOMBOL BUZZER 3D */
+.buzzInFaseZone { display: flex; flex-direction: column; gap: 20px; align-items: center; padding: 10px 0; }
+.buzzer3DWrapper { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+.buzzerPhysicalCircularRed {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ff4d4d, #b30000);
+    border: 4px solid #334155;
+    box-shadow: 0 8px 0 #660000, 0 15px 20px rgba(0,0,0,0.35);
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s ease;
+}
+
+.buzzerPhysicalCircularRed:active {
+    transform: translateY(6px);
+    box-shadow: 0 2px 0 #660000, 0 5px 10px rgba(0,0,0,0.25);
+}
+
+.buzzerInnerCore {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ff6666, #cc0000);
+    box-shadow: inset 0 2px 5px rgba(255,255,255,0.5);
+}
+
+.buzzerPressLabelText {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #ef4444;
+    letter-spacing: 0.05em;
+    animation: blinkText 1s infinite alternate;
+}
+
+.blurredOptionsMock { width: 100%; filter: blur(5px); opacity: 0.3; }
+.blurBar { background: #cbd5e1; padding: 12px; border-radius: 8px; text-align: center; }
+.waitingCaptainBuzzNotification { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #64748b; }
+
+/* Opsi Bar Pilihan */
+.optionsVerticalGridSystem { display: flex; flex-direction: column; gap: 8px; }
+
+.optionInteractiveRowBtn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+}
+
+:global(.dark) .optionInteractiveRowBtn {
+    background: #111827;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.optionSelectedLocal {
+    border-color: #2563eb !important;
+    background-color: rgba(37, 99, 235, 0.05) !important;
+}
+
+.optionEliminatedGrey { opacity: 0.25; cursor: not-allowed; text-decoration: line-through; }
+
+.optionIndicatorLetter {
+    background: #e2e8f0; width: 26px; height: 26px; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;
+}
+
+:global(.dark) .optionIndicatorLetter { background: #334155; }
+.votersRowBadges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.voterNameTag { background: #e2e8f0; color: #334155; font-size: 0.6rem; padding: 1px 4px; border-radius: 4px; }
+:global(.dark) .voterNameTag { background: #475569; color: white; }
+
+.captainLockFinalAnswerBtn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 6px;
+    width: 100%;
+}
+
+/* 🌀 ANIMASI WAITING AREA MODERN */
+.enemyTurnCardWaiting {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    border-radius: 12px;
+    text-align: center;
+    border: 1px dashed #cbd5e1;
+}
+
+:global(.dark) .enemyTurnCardWaiting {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border-color: #334155;
+}
+
+.shimmeringWaveSphere {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    position: relative;
+    animation: wavePulse 2s infinite ease-in-out;
+}
+
+.waveCoreInside { width: 24px; height: 24px; border-radius: 50%; background: #2563eb; }
+.waitingSubtext { font-size: 0.8rem; color: #64748b; margin: 4px 0 0 0; }
+
+/* 💬 TOMBOL CHAT NGAMBANG DRAGGABLE */
+.draggableFloatingChatBtn {
+    position: fixed;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    z-index: 99999;
+    touch-action: none;
+}
+
+/* 💬 SLIDE DRAWER COMPACT NEMPEL DI KIRI DENGAN BACKGROUD TEMA ADAPTIF */
+.floatingChatOverlayDrawer {
+    position: fixed;
+    top: 0; left: -100%; bottom: 0;
+    width: 100vw; height: 100vh;
+    z-index: 100000;
+    display: flex;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chatDrawerOpen { left: 0; }
+
+/* Layout Flex Column Hebat mencegah bug Hilangnya Baris Input Saat Virtual Keyboard Mobile Muncul */
+.sidePanelChatComponent {
+    width: 100%;
+    max-width: 310px;
+    background: #ffffff; 
+    color: #0f172a;      
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 14px;
+    box-sizing: border-box;
+    box-shadow: 5px 0 25px rgba(0,0,0,0.15);
+}
+
+:global(.dark) .sidePanelChatComponent {
+    background: #111827; 
+    color: #f8fafc;      
+    box-shadow: 5px 0 25px rgba(0,0,0,0.4);
+}
+
+.chatClickableBackdropRight { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px); flex: 1; }
+.panelChatHeader { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+:global(.dark) .panelChatHeader { border-bottom-color: rgba(255,255,255,0.08); }
+
+.closeChatComponentBtn { background: transparent; border: none; color: inherit; font-size: 1.1rem; cursor: pointer; }
+.chatMessagesListContainer { flex: 1; overflow-y: auto; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+
+.msgBubbleRow { max-width: 85%; padding: 6px 10px; border-radius: 8px; font-size: 0.8rem; }
+.bubbleSent { background: #2563eb; color: white; align-self: flex-end; }
+.bubbleReceived { background: #f1f5f9; color: #0f172a; align-self: flex-start; }
+:global(.dark) .bubbleReceived { background: #334155; color: white; }
+.bubbleScopeAll { background: #d97706 !important; color: white; }
+.secretSecurityHint { font-size: 0.65rem; color: #64748b; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+
+/* Perbaikan mutlak form input di paling bawah komponen agar tidak terpotong */
+.chatInputFlexForm { 
+    display: flex; 
+    gap: 6px; 
+    align-items: center; 
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+    background: inherit;
+}
+:global(.dark) .chatInputFlexForm { border-top-color: rgba(255,255,255,0.08); }
+
+.scopeSelectorDropdown { background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; padding: 8px 4px; border-radius: 6px; font-size: 0.75rem; }
+:global(.dark) .scopeSelectorDropdown { background: #0f172a; color: white; border-color: #475569; }
+
+.chatTextInputField { flex: 1; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; color: #0f172a; font-size: 0.8rem; }
+:global(.dark) .chatTextInputField { background: #0f172a; border-color: #334155; color: white; }
+.chatSendActionBtn { background: #2563eb; border: none; color: white; width: 36px; height: 36px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+/* 🏆 ROMBAK TOTAL MODAL MATCH COMPLETED - MODEL CARD SCREENSHOT (Dukungan Eksport Gambar Tangguh) */
+.vsStyleScorePodiumCard {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    color: #ffffff;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 420px;
+    padding: 30px 24px;
+    box-sizing: border-box;
+    text-align: center;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+}
+
+.badgeTopMatchResult {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+
+.versusRowShowdownDisplay {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+}
+
+.teamIdentityShowdownBlock {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 10px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.isUltimateWinnerglow {
+    background: rgba(16, 185, 129, 0.08) !important;
+    border-color: #10b981 !important;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+}
+
+.showdownAvatarCircle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #2563eb;
+    color: white;
+    font-weight: 900;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.teamIdentityShowdownBlock h4 { margin: 0; font-size: 0.8rem; font-weight: 700; color: #94a3b8; }
+.teamIdentityShowdownBlock h1 { margin: 0; font-size: 2.2rem; font-weight: 800; color: #ffffff; }
+
+.centerVsCrossBadgeText {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: #475569;
+    font-style: italic;
+    padding: 8px;
+}
+
+.victoryCrownAnnounceStrip {
+    width: 100%;
+    background: rgba(234, 179, 8, 0.1);
+    border: 1px dashed rgba(234, 179, 8, 0.4);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: #fef08a;
+}
+
+.victoryCrownAnnounceStrip strong { color: #facc15; font-weight: 800; }
+.drawStatusStripText { color: #cbd5e1 !important; font-weight: 700; }
+
+/* 🛠️ TOMBOL DI LUAR CARD HASIL TANDING */
+.actionButtonsOutsideContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 420px;
+}
+
+.btnShareResultImage {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    transition: background 0.2s;
+}
+.btnShareResultImage:hover { background: #059669; }
+
+.btnReturnToDashboardGroup {
+    background: #334155;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+.btnReturnToDashboardGroup:hover { background: #1e293b; }
+
+/* 🚪 MODAL LAINNYA */
+.customConfirmCard, .immersiveModalCard {
+    background: #ffffff; padding: 20px; border-radius: 16px; max-width: 300px; width: 90%; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+:global(.dark) .customConfirmCard, :global(.dark) .immersiveModalCard { background: #1e293b; color: white; }
+.warningIconHeader { font-size: 2.2rem; margin-bottom: 8px; }
+.confirmModalActionButtonsFlex { display: flex; gap: 10px; margin-top: 14px; }
+.cancelExitModalBtn { flex: 1; background: #e2e8f0; border: none; padding: 8px; border-radius: 8px; font-weight: 600; }
+.executeExitModalBtn { flex: 1; background: #ef4444; color: white; border: none; padding: 8px; border-radius: 8px; font-weight: 600; }
+
+.immersiveModalOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 100001; padding: 20px; box-sizing: border-box; }
+.immersivePhysicalCircularBtn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; }
+.spinningIconElement { animation: spin 1s linear infinite; }
+
+/* KEYFRAMES ANIMASI */
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes blinkText { from { opacity: 0.5; } to { opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes wavePulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.2); } 50% { transform: scale(1.04); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); } }
+@keyframes pulseGlow { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+/* 📖 Efek Lembaran Buku Terbuka 3D (3D Page Flip Entrada) */
+@keyframes pageFlipFoldOpen {
+    0% {
+        transform: perspective(1000px) rotateX(-35deg) scale(0.93);
+        opacity: 0;
+        box-shadow: 0 0px 0px rgba(0,0,0,0);
+    }
+    100% {
+        transform: perspective(1000px) rotateX(0deg) scale(1);
+        opacity: 1;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    }
+}

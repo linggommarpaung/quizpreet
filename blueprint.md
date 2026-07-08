@@ -101,7 +101,14 @@ Aplikasi telah dideploy dan dikonfigurasi sepenuhnya ke web menggunakan **Fireba
 - **Hosting URL**: [https://quizpreet-68102274-594ae.web.app](https://quizpreet-68102274-594ae.web.app)
 - **Project Console**: [Firebase Console - quizpreet-68102274-594ae](https://console.firebase.google.com/project/quizpreet-68102274-594ae/overview)
 - **Integrasi Firebase**: File `firebase.json` dikonfigurasi untuk mengelola `firestore` (rules/indexes), `storage` (rules), dan `hosting` secara bersamaan.
-- **Aturan Keamanan Tambahan**:
-    - **Firestore**: Aturan keamanan baru diimplementasikan untuk `chapters`, `metadata`, `global_chats`, dan `personal_chats` (termasuk query group collection `messages` yang diamankan menggunakan pencocokan regex UID pada room ID).
+- Aturan Keamanan Tambahan:
+    - **Firestore**: Aturan keamanan baru diimplementasikan untuk `chapters`, `metadata`, `global_chats`, `personal_chats`, `lobbyGroups` (untuk belajar kelompok/mabar regu beserta subkoleksi `signals` untuk WebRTC signaling).
     - **Storage**: Aturan keamanan untuk `avatars` dan berkas PDF materi `materi_pdf` (dengan validasi tipe file PDF dan ukuran maks 20MB untuk admin) aktif.
 - **Perintah Build & Deploy**: `npm run build && npx -y firebase-tools@latest deploy` atau menggunakan script npm `npm run b-d` (skrip ini juga meluncurkan build frontend).
+
+## Rencana Perubahan Saat Ini: Perbaikan Izin Firestore Lobby Group
+- **Masalah**: Kesalahan izin Firestore (Permission Denied) saat membuat/bergabung kelompok belajar karena aturan keamanan untuk `lobbyGroups` belum dikonfigurasi.
+- **Langkah Perbaikan**:
+  1. Menambahkan aturan izin baca/tulis bagi user yang terautentikasi (`request.auth != null`) pada `/lobbyGroups/{roomId}` dan subkoleksi `/lobbyGroups/{roomId}/signals/{signalId}` di `firestore.rules`.
+  2. Melakukan deploy aturan Firestore yang baru menggunakan Firebase CLI.
+  3. Memverifikasi fungsionalitas pembuatan grup mabar di aplikasi.

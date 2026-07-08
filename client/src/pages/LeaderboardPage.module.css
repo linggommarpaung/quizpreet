@@ -1,19 +1,36 @@
 /* client/src/pages/LeaderboardPage.module.css */
 
+/* ==========================================================================
+   🔒 1. LAYOUT UTAMA (Paten Mengunci Layar & Memisahkan Jalur Scroll)
+   ========================================================================== */
 .leaderboardContainer {
     background-color: var(--background-color, #f8fafc);
-    padding: 16px 16px 95px 16px;
-    min-height: 100vh;
-    width: 100%;
+    position: fixed;
+    top: 65px; /* Pas di bawah batas tinggi Top Navbar kuis */
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(100vh - 65px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Mengunci halaman utama agar tidak bergoyang */
     box-sizing: border-box;
     transition: background-color 0.3s ease;
+}
+
+/* Area Atas (Header + Garis Podium Juara 1, 2, 3) Statis Diam di Tempat */
+.fixedTopSection {
+    flex-shrink: 0;
+    background-color: var(--background-color, #f8fafc);
+    z-index: 10;
+    padding: 16px 16px 4px 16px;
 }
 
 /* --- HEADER AREA --- */
 .headerArea {
     text-align: center;
-    margin-bottom: 24px;
-    margin-top: 8px;
+    margin-bottom: 20px;
+    margin-top: 4px;
     animation: fadeInDown 0.5s ease-out both;
 }
 
@@ -31,13 +48,16 @@
     line-height: 1.4;
 }
 
-/* --- 🏆 STRUKTUR PODIUM JUARA INDEPENDEN --- */
+
+/* ==========================================================================
+   🏆 2. STRUKTUR PODIUM JUARA INDEPENDEN (Gaya Visual Klasik)
+   ========================================================================== */
 .podiumContainer {
     display: flex;
     justify-content: center;
     align-items: flex-end;
     gap: 12px;
-    margin-bottom: 32px;
+    margin-bottom: 16px;
     padding: 0 4px;
     height: 185px;
 }
@@ -57,13 +77,13 @@
     margin-bottom: 8px;
 }
 
+/* Penyesuaian frame lingkaran podium agar kompatibel dengan Border Toko */
 .podiumAvatar {
     width: 52px;
     height: 52px;
     border-radius: 50%;
-    object-fit: cover;
+    position: relative;
     cursor: pointer;
-    border: 3px solid var(--card-bg, #ffffff);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s ease;
 }
@@ -72,58 +92,50 @@
     transform: scale(1.1);
 }
 
-.podiumAvatarFallback {
+/* Kestabilan tampilan gambar di dalam lingkaran border toko */
+.podiumAvatar img, .listRowAvatarFrame img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    background-color: var(--card-bg, #ffffff);
+}
+
+.emptyAvatarSlot {
     width: 52px;
     height: 52px;
     border-radius: 50%;
-    background-color: var(--primary-color, #2563eb);
+    background-color: #94a3b8;
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     font-size: 1.1rem;
-    cursor: pointer;
     border: 3px solid var(--card-bg, #ffffff);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
-.crownIcon {
+/* Mahkota & Medal Badge Atas */
+.badgeCrown {
     position: absolute;
     top: -18px;
     left: 50%;
     transform: translateX(-50%) rotate(-4deg);
-    color: #eab308;
+    color: #94a3b8; /* Default Perak */
     font-size: 1.2rem;
-    filter: drop-shadow(0 2px 4px rgba(234, 179, 8, 0.25));
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     z-index: 5;
 }
 
-.podiumRankBadge {
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background-color: var(--card-bg, #ffffff);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.68rem;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-    z-index: 2;
+.goldCrown {
+    color: #eab308; /* Mahkota Emas */
+    filter: drop-shadow(0 2px 4px rgba(234, 179, 8, 0.25));
 }
 
-.goldPodium .podiumRankBadge { color: #eab308; }
-.silverPodium .podiumRankBadge { color: #94a3b8; }
-.bronzePodium .podiumRankBadge { color: #d97706; }
-
-.podiumInfo {
-    text-align: center;
-    margin-bottom: 6px;
-    z-index: 2;
+.bronze .badgeCrown {
+    color: #d97706; /* Trophy Perunggu */
 }
 
 .podiumName {
@@ -135,25 +147,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
+    margin-bottom: 4px;
 }
 
-.podiumScore {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    font-size: 0.7rem;
-    font-weight: 800;
-    color: var(--primary-color, #2563eb);
-}
-
-.starIconMini {
-    font-size: 0.65rem;
-    color: #eab308;
-}
-
-/* Kotak Alas Dudukan Podium */
-.podiumBase {
+/* Kotak Alas Dudukan Tiang Podium */
+.barBlock {
     width: 100%;
     border-radius: 12px 12px 6px 6px;
     display: flex;
@@ -163,50 +162,57 @@
     box-shadow: inset 0 2px 4px rgba(255,255,255,0.15);
 }
 
-.podiumNumber {
+.barNumber {
     font-size: 1.4rem;
     color: rgba(255, 255, 255, 0.9);
 }
 
-/* Skala Ukuran Masing-Masing Podium */
-.goldPodium { height: 100%; }
-.goldPodium .podiumBase {
+/* Skala Tinggi & Gradasi Warna Tiang Dudukan Juara */
+.gold { height: 100%; }
+.gold .barBlock {
     height: 85px;
     background: linear-gradient(135deg, #fbbf24, #f59e0b);
 }
-.goldPodium .podiumAvatar {
+.gold .podiumAvatar {
     width: 58px;
     height: 58px;
-    border-color: #fbbf24;
 }
 
-.silverPodium { height: 85%; }
-.silverPodium .podiumBase {
+.silver { height: 85%; }
+.silver .barBlock {
     height: 65px;
     background: linear-gradient(135deg, #cbd5e1, #94a3b8);
 }
 
-.bronzePodium { height: 75%; }
-.bronzePodium .podiumBase {
+.bronze { height: 75%; }
+.bronze .barBlock {
     height: 52px;
     background: linear-gradient(135deg, #f59e0b, #b45309);
 }
 
-.podiumMe .podiumName {
-    color: var(--primary-color, #2563eb);
-    font-weight: 800;
-}
 
-/* --- 📋 BARIS LIST PERINGKAT BERLANJUT --- */
-.rankList {
+/* ==========================================================================
+   📜 3. AREA SCROLL LIST (Hanya Peringkat 4-20 yang Bergerak Berlanjut)
+   ========================================================================== */
+.scrollableRankContainer {
+    flex: 1;
+    overflow-y: auto; /* Mengaktifkan scroll vertikal independen */
+    padding: 4px 16px 110px 16px; /* Jarak bawah longgar agar aman dari menu navbar bawah */
     display: flex;
     flex-direction: column;
     gap: 8px;
     max-width: 600px;
+    width: 100%;
     margin: 0 auto;
+    box-sizing: border-box;
 }
 
-.rankItem {
+/* Menambah ruang gulir cadangan jika floating card privat aktif di bawah */
+.hasFloatingPadding {
+    padding-bottom: 175px;
+}
+
+.rankRowCard {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -217,10 +223,9 @@
     box-sizing: border-box;
     transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
     animation: slideUpRow 0.4s ease-out both;
-    animation-delay: calc(var(--row-index, 0) * 0.05s + 0.3s);
 }
 
-.rankItem:hover {
+.rankRowCard:hover {
     transform: translateY(-1px);
 }
 
@@ -230,7 +235,7 @@
     gap: 12px;
 }
 
-.rankNumber {
+.rankNumberText {
     font-size: 0.82rem;
     font-weight: 700;
     color: #94a3b8;
@@ -238,46 +243,34 @@
     text-align: center;
 }
 
-.avatarClickableWrapper {
-    display: flex;
-    align-items: center;
-}
-
-.avatar {
+/* Lingkaran pembungkus avatar list baris */
+.listRowAvatarFrame {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    object-fit: cover;
-    border: 1.5px solid var(--border-color, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     transition: transform 0.2s ease;
 }
 
-.avatar:hover {
+.listRowAvatarFrame:hover {
     transform: scale(1.1);
 }
 
-.avatarFallback {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background-color: #94a3b8;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-}
-
-.name {
+.playerNameText {
     font-size: 0.84rem;
     font-weight: 600;
     color: var(--text-color, #1e293b);
 }
 
-.score {
+.rankRightSection {
+    display: flex;
+    align-items: center;
+}
+
+.scoreText {
     font-size: 0.88rem;
     font-weight: 700;
     color: var(--primary-color, #2563eb);
@@ -289,17 +282,55 @@
     color: #94a3b8;
 }
 
-/* Highlight Khusus Akun Milik Sendiri */
-.currentUser {
+/* Highlight sorot baris khusus Akun Milik Sendiri di area top 20 */
+.rowHighlightMe {
     border-color: var(--primary-color, #2563eb);
     background-color: rgba(37, 99, 235, 0.05);
 }
-.currentUser .name {
+.rowHighlightMe .playerNameText {
     color: var(--primary-color, #2563eb);
     font-weight: 700;
 }
 
-/* --- 🔍 JENDELA PREVIEW ZOOM POP-UP MODAL --- */
+
+/* ==========================================================================
+   🔒 4. ATURAN FLOATING CARD PRIVAT USER (> RANK 20)
+   ========================================================================== */
+.privateUserFloatingCard {
+    position: absolute;
+    bottom: 85px; /* Mengambang aman di atas menu navigasi bawah */
+    left: 16px;
+    right: 16px;
+    max-width: 568px; /* Menyesuaikan batas proporsi layar tablet/PC */
+    margin: 0 auto;
+    background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%); /* Tema premium gelap eksklusif */
+    border: 2px solid #a855f7;
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 -6px 22px rgba(168, 85, 247, 0.35);
+    z-index: 99;
+    box-sizing: border-box;
+    animation: floatingPopUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+.privateUserFloatingCard .playerNameText,
+.privateUserFloatingCard .rankNumberText,
+.privateUserFloatingCard .scoreText {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+
+.privateUserFloatingCard .poinLabel {
+    color: #e9d5ff !important;
+}
+
+
+/* ==========================================================================
+   🔍 5. JENDELA PREVIEW ZOOM POP-UP MODAL & UTILITY INFO
+   ========================================================================== */
 .modalOverlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -352,7 +383,17 @@
     color: var(--text-color, #0f172a);
 }
 
-/* --- KEYFRAMES TIMING ANIMASI --- */
+.errorContainer, .emptyInfo {
+    padding: 50px 20px;
+    color: #64748b;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+
+/* ==========================================================================
+   🌀 6. ANIMASI KEYFRAMES TIMING DATA
+   ========================================================================== */
 @keyframes fadeInDown {
     from { opacity: 0; transform: translateY(-12px); }
     to { opacity: 1; transform: translateY(0); }
@@ -374,15 +415,21 @@
     to { transform: scale(1); opacity: 1; }
 }
 
-.errorText {
-    padding: 50px 20px;
-    color: #64748b;
-    font-size: 0.85rem;
-    text-align: center;
+@keyframes floatingPopUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
+
+/* ==========================================================================
+   📱 7. RESPONSIVE TABLET & DESKTOP ADJUSTMENT
+   ========================================================================== */
 @media (min-width: 768px) {
-    .leaderboardContainer {
-        padding: 24px 15% 100px 15%;
+    .fixedTopSection {
+        padding: 20px 15% 4px 15%;
+    }
+    .scrollableRankContainer {
+        padding-left: 15%;
+        padding-right: 15%;
     }
 }

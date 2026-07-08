@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useGDPR } from '../contexts/GDPRContext'; // <-- Impor useGDPR
+import { useGDPR } from '../contexts/GDPRContext'; 
 import styles from './AuthPage.module.css';
 
 // Impor komponen form
@@ -13,7 +13,7 @@ import Spinner from '../components/ui/Spinner';
 
 const AuthPage = () => {
     const [authMode, setAuthMode] = useState('login'); 
-    const { requestConsent } = useGDPR(); // <-- Gunakan hook GDPR
+    const { requestConsent } = useGDPR(); 
 
     const { 
         signInWithGoogle, 
@@ -23,7 +23,6 @@ const AuthPage = () => {
         loading 
     } = useAuth();
 
-    // Bungkus semua aksi otentikasi dengan `requestConsent`
     const handleGoogleSignIn = () => {
         requestConsent(async () => {
             try {
@@ -52,7 +51,6 @@ const AuthPage = () => {
     };
 
     const renderForm = () => {
-        // Hapus logika yang menonaktifkan form
         switch (authMode) {
             case 'signup':
                 return (
@@ -88,13 +86,13 @@ const AuthPage = () => {
     return (
         <div className={styles.authPageContainer}>
             {loading && <Spinner />}
-            <div className={styles.backgroundWave}></div>
+            
             <div className={styles.authCard}>
                  <div className={styles.authHeader}>
                     {authMode === 'login' && <h1>Selamat Datang!</h1>}
-                    {authMode === 'signup' && <h1>Buat Akun Baru</h1>}
-                    {authMode === 'forgot' && <h1>Reset Password Anda</h1>}
-                    <p>Mulai perjalanan kuis Anda untuk menjadi pahlawan kemerdekaan!</p>
+                    {authMode === 'signup' && <h1>Buat Akun</h1>}
+                    {authMode === 'forgot' && <h1>Reset Sandi</h1>}
+                    <p>Persiapkan diri untuk kompetisi olimpiade nasional tingkat tinggi.</p>
                 </div>
                 
                 {renderForm()}

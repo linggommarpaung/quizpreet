@@ -1,0 +1,181 @@
+.emptyStateBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.latihanFlexSection { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+.infoAlertBanner { background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; text-align: center; flex-shrink: 0; }
+:global([data-theme='dark']) .infoAlertBanner, :global(.dark) .infoAlertBanner { background-color: #064e3b; border-color: #047857; color: #a7f3d0; }
+
+.latihanQuizContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.quizHeaderMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-muted, #64748b);
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+.miniProgressDots {
+  display: flex;
+  gap: 6px;
+}
+
+.dotItem {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--border-color, #cbd5e1);
+  transition: all 0.3s ease;
+}
+:global(.dark) .dotItem { background-color: #334155; }
+
+.dotActive {
+  background-color: #2563eb;
+  transform: scale(1.25);
+  box-shadow: 0 0 6px rgba(37, 99, 235, 0.5);
+}
+.dotFilled {
+  background-color: #10b981;
+}
+
+.latihanQuestionCardAnim {
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  animation: slideInQuestion 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+:global(.dark) .latihanQuestionCardAnim {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+@keyframes slideInQuestion {
+  from { opacity: 0; transform: translateY(15px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.latihanOptionsVerticalStack { display: flex; flex-direction: column; gap: 8px; }
+
+.latihanOptBtn, .latihanOptBtnPicked, .correctOptBtn, .wrongOptBtn {
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border: 2px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #334155;
+  transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+:global(.dark) .latihanOptBtn { background-color: #1e293b; border-color: #334155; color: #cbd5e1; }
+
+.latihanOptBtn:active, .latihanOptBtnPicked:active { transform: scale(0.97); }
+.latihanOptBtn:hover { background-color: #f1f5f9; border-color: #cbd5e1; }
+:global(.dark) .latihanOptBtn:hover { background-color: #334155; }
+
+.latihanOptBtnPicked { border-color: #2563eb; background-color: #eff6ff; color: #1e40af; }
+
+.correctOptBtn {
+  border-color: #10b981;
+  background-color: #ecfdf5;
+  color: #065f46;
+}
+:global(.dark) .correctOptBtn { background-color: rgba(16, 185, 129, 0.15); color: #34d399; }
+
+.wrongOptBtn {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+:global(.dark) .wrongOptBtn { background-color: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+.latihanExplanationBox { margin-top: 10px; background-color: #fafafa; border-left: 3px solid #eab308; padding: 8px 10px; border-radius: 0 8px 8px 0; }
+:global([data-theme='dark']) .latihanExplanationBox, :global(.dark) .latihanExplanationBox { background-color: #334155; }
+.latihanExplanationBox h5 { margin: 0 0 4px 0; font-size: 0.72rem; color: #854d0e; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+:global([data-theme='dark']) .latihanExplanationBox h5, :global(.dark) .latihanExplanationBox h5 { color: #fde047; }
+.latihanExplanationBox p { margin: 0; font-size: 0.7rem; color: #451a03; }
+:global([data-theme='dark']) .latihanExplanationBox p, :global(.dark) .latihanExplanationBox p { color: #cbd5e1; }
+
+.quizNavigationRow { display: flex; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.quizNavBtn, .quizNavBtnPrimary, .quizNavBtnFinished { flex: 1; border: none; padding: 12px; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
+
+.quizNavBtn { background-color: #e2e8f0; color: #475569; }
+.quizNavBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+:global(.dark) .quizNavBtn { background-color: #334155; color: #94a3b8; }
+
+.quizNavBtnPrimary { background-color: #2563eb; color: #ffffff; }
+.quizNavBtnPrimary:disabled { background-color: #94a3b8; opacity: 0.6; cursor: not-allowed; }
+.quizNavBtnFinished { background-color: #10b981; color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+
+/* STYLING MINI ULANGAN HARNESS INTEGRATION */
+.ujianWrapper { width: 100%; margin-top: 15px; }
+.gerbangUjianBox { background-color: var(--card-bg, #ffffff); border: 1px solid var(--border-color, #e2e8f0); border-radius: 16px; padding: 24px; text-align: center; }
+:global(.dark) .gerbangUjianBox { background-color: #1e293b; border-color: #334155; }
+.aturanUjianList { text-align: left; margin: 20px auto; max-width: 450px; display: flex; flex-direction: column; gap: 10px; font-size: 0.88rem; }
+.startUjianBtn { background: linear-gradient(90deg, #2563eb, #1d4ed8); color: white; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+
+.lembaranUjianActive { width: 100%; position: relative; }
+.floatingTimerHeader { position: sticky; top: 10px; z-index: 50; background-color: #1e293b; color: #ffffff; padding: 8px 16px; border-radius: 30px; width: fit-content; margin: 0 auto 20px auto; font-weight: 700; font-size: 0.9rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.timerKritis { color: #f87171; animation: blinkRed 1s infinite; }
+@keyframes blinkRed { 50% { opacity: 0.4; } }
+
+.judulDaftarSoal { font-size: 1.1rem; font-weight: 700; margin-bottom: 25px; border-bottom: 2px dashed var(--border-color, #cbd5e1); padding-bottom: 10px; }
+.scrollableSoalArea { max-height: 48vh; overflow-y: auto; padding-right: 8px; background: transparent; border: none; }
+.scrollableSoalArea::-webkit-scrollbar { width: 5px; }
+.scrollableSoalArea::-webkit-scrollbar-track { background: transparent; }
+.scrollableSoalArea::-webkit-scrollbar-thumb { background-color: var(--border-color, #cbd5e1); border-radius: 10px; }
+:global(.dark) .scrollableSoalArea::-webkit-scrollbar-thumb { background-color: #334155; }
+
+.barisSoalPolos { margin-bottom: 28px; padding-bottom: 15px; }
+.teksSoalUjian { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; color: var(--text-color, #1e293b); }
+.pilihanUjianRow { display: flex; flex-direction: column; gap: 8px; }
+
+.btnOpsiUjianPolos { width: 100%; text-align: left; background: transparent; border: 1px solid var(--border-color, #cbd5e1); padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; cursor: pointer; color: var(--text-color, #334155); display: flex; align-items: center; gap: 10px; transition: all 0.2s ease; }
+.btnOpsiUjianTerpilih { background-color: rgba(37, 99, 235, 0.08); border-color: #2563eb; font-weight: 700; }
+.btnOpsiUjianTerpilih .bulatanCeklist { color: #2563eb; }
+.bulatanCeklist { font-size: 1.1rem; color: #94a3b8; }
+.submitUjianActionBtn { width: 100%; background-color: #1e293b; color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 20px; margin-bottom: 25px; }
+:global(.dark) .submitUjianActionBtn { background-color: #3b82f6; }
+
+.backdropModalUjian { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+.cardHasilUjianKertas { background-color: #ffffff; border-radius: 24px; width: 100%; max-width: 420px; padding: 26px; position: relative; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); color: #1e293b; }
+.badgeStatusLulus { background-color: #10b981; color: white; font-weight: 800; font-size: 0.75rem; padding: 6px 14px; border-radius: 20px; width: fit-content; margin: 0 auto 12px auto; letter-spacing: 1px; }
+.badgeStatusRemedial { background-color: #ef4444; color: white; font-weight: 800; font-size: 0.75rem; padding: 6px 14px; border-radius: 20px; width: fit-content; margin: 0 auto 12px auto; letter-spacing: 1px; }
+.titleHasilChapter { font-size: 1.15rem; font-weight: 700; }
+.dividerGaris { height: 2px; background-color: #f1f5f9; margin: 15px 0; }
+.scoreBesarMelingkar { margin: 20px auto; width: 130px; height: 130px; border-radius: 50%; border: 4px dashed #2563eb; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.labelScoreKecil { font-size: 0.65rem; color: #64748b; font-weight: 700; }
+.angkaScoreUtama { font-size: 2.2rem; font-weight: 900; color: #1e293b; line-height: 1; margin: 2px 0; }
+.labelKkmKeterangan { font-size: 0.65rem; color: #94a3b8; }
+.boxRewardUjianKecil { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 20px; }
+.boxRewardUjianKecil h5 { margin: 0 0 6px 0; font-size: 0.8rem; color: #475569; }
+.rowRewardAset { display: flex; justify-content: center; gap: 20px; font-weight: 700; font-size: 0.95rem; color: #10b981; }
+.notifReviewSaja { font-size: 0.6rem; color: #94a3b8; margin: 6px 0 0 0; }
+.grupAksiTombolModal { display: flex; flex-direction: column; gap: 10px; }
+.btnAksiShare { background-color: #2563eb; color: white; border: none; padding: 11px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+.rowAksiNavigasi { display: flex; gap: 10px; }
+.btnAksiKembaliList, .btnAksiLanjutBab { flex: 1; border: 1px solid #cbd5e1; padding: 10px; border-radius: 10px; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.btnAksiKembaliList { background-color: #f1f5f9; color: #475569; }
+.btnAksiLanjutBab { background-color: #1e293b; color: white; border: none; }

@@ -1,0 +1,501 @@
+/* client/src/components/ui/ArenaByOne.module.css */
+
+.arenaWrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #f8fafc; /* DEFAULT: Putih / Terang Lembut */
+    color: #1e293b;     /* Teks gelap */
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* OTOMATIS BERUBAH JIKA ADA AKTOR CLASS .dark DI INDUK */
+:global(.dark) .arenaWrapper {
+    background: #0f172a;
+    color: #fff;
+}
+
+.topDashboardPanel {
+    width: 100%;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    box-sizing: border-box;
+}
+:global(.dark) .topDashboardPanel {
+    background: #1e293b;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.exitArenaBtn {
+    background: #fee2e2;
+    color: #ef4444;
+    border: 1px solid #fca5a5;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+}
+
+.questionCounterBadge {
+    background: #3b82f6;
+    color: #fff;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.fullscreenToggleBtn {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.questionBoard {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+    margin-bottom: 75px; 
+}
+
+.quizActiveContainer {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.questionTextCard {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    padding: 20px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+:global(.dark) .questionTextCard {
+    background: #1e293b;
+    border-color: #334155;
+    color: #fff;
+}
+
+.optionsLayoutGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 600px) {
+    .optionsLayoutGrid { grid-template-columns: 1fr; }
+}
+
+.optionClickItem {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: left;
+    color: #334155;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.optionClickItem:hover:not(:disabled) {
+    background: #f1f5f9;
+}
+:global(.dark) .optionClickItem {
+    background: #1e293b;
+    border-color: #334155;
+    color: #fff;
+}
+:global(.dark) .optionClickItem:hover:not(:disabled) {
+    background: #334155;
+}
+
+.optionIndexLabel {
+    background: #eff6ff;
+    color: #3b82f6;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+/* =======================================
+   RE-DESIGN HUD BAWAH AGAR SUPER RAMPI DI HP
+   ======================================= */
+.playersHudContainer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px 16px; 
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+.playerHudBox {
+    display: flex;
+    align-items: center;
+    gap: 8px; 
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(5px);
+    padding: 6px 12px; 
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    pointer-events: auto;
+}
+:global(.dark) .playerHudBox {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.hudLeft { border-left: 3px solid #3b82f6;}
+.hudRight { border-right: 3px solid #ef4444; }
+
+.hudAvatar {
+    width: 32px !important;  
+    height: 32px !important;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.hudDetails, .hudDetailsRight { display: flex; flex-direction: column; }
+.hudDetailsRight { align-items: flex-end; }
+
+.hudName {
+    font-size: 0.72rem; 
+    font-weight: 600;
+    color: #64748b;
+}
+:global(.dark) .hudName { color: #cbd5e1; }
+
+.hudScoreBox, .hudScoreBoxRight {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.scoreText {
+    font-size: 1.1rem; 
+    font-weight: 800;
+    color: #0f172a;
+}
+:global(.dark) .scoreText { color: #fff; }
+
+.innerLoading, .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: #64748b;
+    height: 100%;
+}
+.loading { height: 100vh; color: #3b82f6; font-weight: bold; }
+
+/* MODAL */
+.customModalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+}
+.customModalBox {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    width: 85%;
+    max-width: 340px;
+    text-align: center;
+}
+:global(.dark) .customModalBox { background: #1e293b; color: #fff; }
+.customModalActionRow { display: flex; gap: 8px; margin-top: 15px; }
+.cancelActionBtn, .confirmLeaveBtn { flex: 1; padding: 8px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; }
+.cancelActionBtn { background: #e2e8f0; color: #334155; }
+.confirmLeaveBtn { background: #ef4444; color: #fff; }
+
+/* =========================================================
+   RE-DESIGN FINISH CARD: VS HORIZONTAL & BALOK MOTIF ABSTRAK
+   ========================================================= */
+
+.finishCardContainer {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: scaleUp 0.4s ease-out;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+@keyframes scaleUp {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.finishCardBody {
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+:global(.dark) .finishCardBody {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.finishCardHeader {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    height: 115px; 
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+    padding: 12px 20px;
+    box-sizing: border-box;
+    border-bottom-left-radius: 12% 20px;
+    border-bottom-right-radius: 12% 20px;
+}
+
+/* Watermark dikunci di pojok kanan atas */
+.watermarkText {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.35); 
+    z-index: 3;
+    text-transform: uppercase;
+}
+
+/* Base style motif balok abstrak transparan */
+.abstractBlock {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.08); 
+    border-radius: 4px;
+    transform: rotate(-15deg); 
+    pointer-events: none;
+    z-index: 1;
+}
+
+.block1 { width: 45px; height: 15px; top: 15px; left: 10%; }
+.block2 { width: 70px; height: 20px; top: 45px; left: -5%; background: rgba(255, 255, 255, 0.05); }
+.block3 { width: 60px; height: 12px; top: 20px; right: 35%; }
+.block4 { width: 35px; height: 35px; bottom: 20px; left: 40%; background: rgba(255, 255, 255, 0.04); }
+
+/* Flexbox container penyeimbang posisi horizontal */
+.vsLayoutContainer {
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    z-index: 5;
+}
+
+.avatarWrapperContainer {
+    position: relative;
+    top: unset;
+    left: unset;
+    transform: unset;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #ffffff;
+    padding: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    box-sizing: border-box;
+}
+:global(.dark) .avatarWrapperContainer {
+    background: #1e293b;
+}
+
+.vsBadgeMiddle {
+    background: #ef4444; 
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 900;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    z-index: 10;
+}
+:global(.dark) .vsBadgeMiddle {
+    border-color: #1e293b;
+}
+
+.avatarLeft { border: 2px solid #3b82f6; }
+.avatarRight { border: 2px solid #ef4444; }
+
+.finishAvatarImg {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.finishCardContent {
+    padding: 48px 24px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.statusBadgeText {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 4px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+.statusWin { background: #dcfce7; color: #15803d; }
+.statusLose { background: #fee2e2; color: #b91c1c; }
+.statusDraw { background: #f1f5f9; color: #475569; }
+
+.finishUserNameText {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 20px 0;
+}
+:global(.dark) .finishUserNameText { color: #fff; }
+
+.circularScoreFrame {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    border: 3px dashed #2563eb;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+.scoreTitleLabel {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 1px;
+}
+
+.scoreBigValue {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1;
+    margin: 4px 0;
+}
+:global(.dark) .scoreBigValue { color: #fff; }
+
+.scoreSubTargetText {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.automaticFooterPlatform {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+}
+
+.finishActionRowBar {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.btnActionShare {
+    flex: 1;
+    background: #e2e8f0;
+    color: #334155;
+    border: none;
+    border-radius: 14px;
+    padding: 12px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+.btnActionShare:hover { background: #cbd5e1; }
+:global(.dark) .btnActionShare { background: #334155; color: #cbd5e1; }
+
+.btnActionNextLobby {
+    flex: 1.5;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 14px;
+    padding: 12px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    transition: background 0.2s;
+}
+.btnActionNextLobby:hover { background: #1d4ed8; }

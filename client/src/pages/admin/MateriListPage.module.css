@@ -1,34 +1,35 @@
 /* client/src/pages/admin/MateriListPage.module.css */
-
 .adminContainer {
   padding: 2rem;
-  background-color: var(--background-color, #f8fafc);
+  background-color: #f8fafc;
   min-height: 100vh;
   font-family: 'Poppins', sans-serif;
   box-sizing: border-box;
 }
 
-.adminHeader {
-  margin-bottom: 2.5rem;
-}
-
 .adminHeader h1 {
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: var(--text-color, #1e293b);
-  margin: 1rem 0 0.25rem 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0.5rem 0 0.25rem 0;
 }
 
 .subtitleHeader {
   font-size: 0.95rem;
-  color: var(--text-color-subtle, #64748b);
+  color: #64748b;
   margin: 0;
 }
 
-.navButton {
-  background: var(--secondary-bg, #ffffff);
-  border: 1px solid var(--border-color, #e2e8f0);
-  color: var(--text-color, #334155);
+.headerTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.navButton, .addButton {
   padding: 0.6rem 1.2rem;
   border-radius: 8px;
   font-weight: 600;
@@ -37,89 +38,280 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s ease;
+  transition: 0.2s;
 }
 
-.navButton:hover {
-  background-color: var(--border-color, #f1f5f9);
-  transform: translateX(-2px);
+.navButton {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.addButton {
+  background: #2563eb;
+  color: white;
+  border: none;
 }
 
 .adminMain {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
 }
 
+/* GRID LEVEL 1 */
 .mapelGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
 .mapelCard {
-  background-color: var(--card-bg, #ffffff);
-  border-radius: 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
   padding: 1.5rem;
   display: flex;
   align-items: center;
   gap: 1.25rem;
   cursor: pointer;
-  border: 1px solid var(--border-color, #e2e8f0);
-  box-shadow: 0 4px 12px var(--shadow-color, rgba(0,0,0,0.02));
-  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .mapelCard:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px var(--shadow-color, rgba(0,0,0,0.06));
-  border-color: #2563eb;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.04);
+  border-color: #cbd5e1;
 }
 
 .iconCircle {
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   flex-shrink: 0;
-}
-
-.mapelInfo {
-  flex-grow: 1;
 }
 
 .mapelInfo h3 {
   margin: 0 0 0.25rem 0;
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--text-color, #1e293b);
+  font-size: 1.1rem;
+  color: #1e293b;
 }
 
 .mapelInfo p {
   margin: 0;
-  font-size: 0.82rem;
-  color: var(--text-color-subtle, #64748b);
-  line-height: 1.4;
+  font-size: 0.85rem;
+  color: #64748b;
 }
 
-/* Responsive Mobile Breakpoint */
-@media (max-width: 640px) {
+/* LIST LEVEL 2 */
+.chapterListGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chapterItemCard {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.chapterItemCard:hover {
+  border-color: #4338ca;
+  background-color: #fafafa;
+}
+
+.chapterCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.chapterBadge {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.chapterTitleText {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #1e293b;
+}
+
+.deleteChapterBtn {
+  background: #fef2f2;
+  color: #ef4444;
+  border: none;
+  padding: 0.6rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.deleteChapterBtn:hover {
+  background: #fee2e2;
+}
+
+/* UTILITIES & MODAL */
+.loadingArea {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+  font-size: 2rem;
+  color: #2563eb;
+  margin-bottom: 0.5rem;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.emptyArea {
+  background: white;
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 25px rgba(0,0,0,0.1);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  color: #475569;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.cancelBtn {
+  background: #f1f5f9;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.submitBtn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* ==================== SCREEN RESPONSIVENESS (HP) ==================== */
+@media (max-width: 600px) {
   .adminContainer {
     padding: 1rem;
   }
   
   .adminHeader h1 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
-
+  
+  .headerTitleRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .addButton {
+    width: 100%;
+    justify-content: center;
+  }
+  
   .mapelGrid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-
-  .mapelCard {
-    padding: 1.2rem;
+  
+  .chapterItemCard {
+    padding: 1rem;
+  }
+  
+  .chapterTitleText {
+    font-size: 0.95rem;
   }
 }

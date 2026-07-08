@@ -5,6 +5,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions"; // <-- 1. Impor getFunctions
+import { getDatabase } from 'firebase/database';
 
 // Konfigurasi Firebase dari input Anda
 export const firebaseConfig = {
@@ -23,4 +24,6 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const functions = getFunctions(app); // <-- 2. Inisialisasi dan ekspor functions
+export const functions = getFunctions(app);
+export const rtdb = getDatabase(app);
+// <-- 2. Inisialisasi dan ekspor functions

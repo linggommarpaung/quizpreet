@@ -1,0 +1,242 @@
+/* client/src/components/ui/AiTutorSection.module.css */
+.aiSectionWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  overflow: hidden;
+  height: 100%;
+}
+
+:global(.dark) .aiSectionWrapper {
+  background-color: #1e293b;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.aiHeaderBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: rgba(37, 99, 235, 0.06);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+:global(.dark) .aiHeaderBar {
+  background-color: rgba(37, 99, 235, 0.1);
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.aiBotIdentity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatarAiCircle {
+  background-color: #2563eb;
+  color: white;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.3);
+}
+
+.aiBotIdentity h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.statusOnline {
+  font-size: 0.7rem;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.platformSub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  background: var(--background-color, #f1f5f9);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+:global(.dark) .platformSub {
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+.chatMessageArea {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background-color: var(--background-color, #f8fafc);
+}
+
+:global(.dark) .chatMessageArea {
+  background-color: #0f172a;
+}
+
+.chatRow {
+  display: flex;
+  gap: 10px;
+  max-width: 80%;
+  align-items: flex-end;
+}
+
+.rowBot {
+  align-self: flex-start;
+}
+
+.rowUser {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.miniBotAvatar {
+  background-color: #475569;
+  color: white;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.chatBubbleBody {
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  padding: 10px 14px;
+  border-radius: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+:global(.dark) .chatBubbleBody {
+  background-color: #1e293b;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.rowBot .chatBubbleBody {
+  border-bottom-left-radius: 2px;
+}
+
+.rowUser .chatBubbleBody {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-bottom-right-radius: 2px;
+}
+
+.chatBubbleText {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* Mengatur agar tag <p> di dalam markdown tidak punya margin bawah yang ketebalan */
+.chatBubbleText p {
+  margin: 0 0 8px 0;
+}
+
+.chatBubbleText p:last-child {
+  margin-bottom: 0;
+}
+
+/* Mengatur jarak list (bullet points) agar rapi di dalam bubble chat */
+.chatBubbleText ul, .chatBubbleText ol {
+  margin: 5px 0;
+  padding-left: 20px;
+}
+
+.chatTimestamp {
+  display: block;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.rowUser .chatTimestamp {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.typingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-style: italic;
+}
+
+.spinIcon {
+  animation: spin 1s infinite linear;
+}
+
+.aiInputFormBlock {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background-color: var(--card-bg, #ffffff);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+:global(.dark) .aiInputFormBlock {
+  background-color: #1e293b;
+  border-top-color: rgba(255, 255, 255, 0.05);
+}
+
+.aiInputFieldText {
+  flex: 1;
+  background-color: var(--background-color, #f1f5f9);
+  color: var(--text-color, #0f172a);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+:global(.dark) .aiInputFieldText {
+  background-color: #0f172a;
+  color: white;
+  border-color: #475569;
+}
+
+.aiSendTriggerBtn {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.aiSendTriggerBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}

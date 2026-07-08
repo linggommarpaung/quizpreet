@@ -1,123 +1,169 @@
 // client/src/pages/QuizPage.jsx
 
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import styles from './QuizPage.module.css';
-import { toast } from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast'; 
 import { useAuth } from '../contexts/AuthContext';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 import { 
-  FaStar, 
-  FaFire, 
-  FaChevronRight,
-  FaLock,
-  FaCircleCheck,
-  FaArrowLeft,
-  FaCalculator,    
-  FaFlask,         
-  FaEarthAsia,     
-  FaLanguage,      
-  FaBook,
-  FaSpinner
+  FaStar, FaFire, FaChevronRight, FaArrowLeft,
+  FaCalculator, FaFlask, FaEarthAsia, FaLanguage,      
+  FaSpinner, FaFont, FaLock 
 } from 'react-icons/fa6';
 
 const QuizPage = () => {
   const { currentUser } = useAuth();
-  
-  // --- STATE LEVEL TAMPILAN (0 = Pilih Mapel, 1 = Pilih Paket Quiz dari dailyPaths) ---
-  const [fullscreenLevel, setFullscreenLevel] = useState(0);
-  const [selectedSubject, setSelectedSubject] = useState(null);
+  const { mapelId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // --- STATE DATA FIREBASE & KUIS ---
   const [allQuizzes, setAllQuizzes] = useState([]);
   const [filteredQuizzes, setFilteredQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // --- DATA MATA PELAJARAN (Ikon disamakan dengan Forum & Manajemen) ---
-  const subjectsData = [
-    { id: 'mtk', name: 'Matematika', icon: <FaCalculator />, color: '#ef4444', desc: 'Uji kemampuan aljabar & hitungan' },
-    { id: 'ipa', name: 'Sains (IPA)', icon: <FaFlask />, color: '#10b981', desc: 'Uji pemahaman fisika & biologi' },
-    { id: 'ips', name: 'IPS', icon: <FaEarthAsia />, color: '#f59e0b', desc: 'Uji wawasan sejarah & geografi' },
-    { id: 'bing', name: 'Bahasa Inggris', icon: <FaLanguage />, color: '#3b82f6', desc: 'Uji tenses & reading skill' },
-    { id: 'indonesia', name: 'Bahasa Indonesia', icon: <FaBook />, color: '#8b5cf6', desc: 'Uji tata bahasa & ejaan baku' }
-  ];
-
-  // Fetch seluruh paket kuis dari dailyPaths saat komponen di-load
-  useEffect(() => {
-  const fetchQuizzes = async () => {
-    try {
-      setLoading(true);
-      const querySnapshot = await getDocs(collection(db, 'dailyPaths'));
-      const quizList = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setAllQuizzes(quizList);
-    } catch (err) {
-      console.error("Error fetching quizzes:", err);
-      toast.error("Gagal memuat data paket kuis.");
-    } finally {
-      setLoading(false);
+  
+  // Nilai default 0 (Berarti belum ada paket yang selesai, hanya paket 1 yang terbuka)
+  const [completedOrder, setCompletedOrder] = useState(0);
+  
+  const toggleFullscreen = (enter) => {
+    const elem = document.documentElement;
+    if (enter) {
+      if (elem.requestFullscreen) elem.requestFullscreen();
+    } else {
+      if (document.fullscreenElement) document.exitFullscreen();
     }
   };
 
-  fetchQuizzes();
-}, []);
-
-  // Filter kuis berdasarkan mapel saat user memilih salah satu mapel
-  const handleSelectSubject = (subject) => {
-  setSelectedSubject(subject);
-  
-  // PENGECEKAN UTAMA: Menyaring berdasarkan field 'mapelId' dari data dailyPaths
-  const matches = allQuizzes.filter(quiz => {
-    // Pastikan mapelId di dokumen database sama dengan id mapel yang diklik (contoh: 'mtk')
-    return quiz.mapelId === subject.id;
-  })
-  .sort((a, b) => {
-    // Mengurutkan berdasarkan nomor tema/bab kuis
-    return Number(a.themeNumber || 0) - Number(b.themeNumber || 0);
-  });
-    
-  setFilteredQuizzes(matches);
-  setFullscreenLevel(1); // Masuk ke layer list kuis
-};
-
-  const handleStartQuiz = (quizTitle) => {
-    toast.success(`Memulai ${quizTitle}!`);
-    // Integrasikan aksi pemicu pengerjaan kuis/modal kuis kamu di sini
+  const handleGoBack = () => {
+    toggleFullscreen(false);
+    navigate(`/quiz`);
   };
 
-  return (
-    <div className={styles.quizWrapperPage}>
-      
-      {/* 👑 PANEL STATS & POINTS (DIAM DI ATAS, TIDAK IKUT SCROLL) */}
-      <div className={styles.premiumHeaderSummary}>
-        <div className={styles.xpBalanceBlock}>
-          <div className={styles.xpDisplayRow}>
-            <div className={styles.statBoxItem}>
-              <FaStar className={styles.starIconScore} />
-              <div className={styles.statBoxMeta}>
-                <span className={styles.xpLabelTitle}>Poin XP</span>
-                <h5>{currentUser?.xp || 0} XP</h5>
-              </div>
-            </div>
-            
-            <div className={styles.dividerLine} />
+  // FETCH DATA KUIS & KUNCIAN PROGRESS USER
+  useEffect(() => {
+    const fetchQuizzesAndProgress = async () => {
+      try {
+        setLoading(true);
 
-            <div className={styles.statBoxItem}>
-              <FaFire className={styles.fireIconStreak} />
-              <div className={styles.statBoxMeta}>
-                <span className={styles.xpLabelTitle}>Streak</span>
-                <h5>3 Hari</h5>
+        let currentCompleted = 0; // Default 0 jika user baru / belum ada progress
+        
+        // Ambil data dari: userProgress/[uid] -> [mapelId] -> orderq
+        if (currentUser?.uid && mapelId) {
+          const progressRef = doc(db, 'userProgress', currentUser.uid);
+          const progressSnap = await getDoc(progressRef);
+          
+          if (progressSnap.exists()) {
+            const dataProgress = progressSnap.data();
+            if (dataProgress[mapelId] && dataProgress[mapelId].orderq !== undefined) {
+              currentCompleted = Number(dataProgress[mapelId].orderq || 0);
+            }
+          }
+        }
+        setCompletedOrder(currentCompleted);
+
+        // Ambil paket kuis dari dailyPaths
+        const querySnapshot = await getDocs(collection(db, 'dailyPaths'));
+        const quizList = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setAllQuizzes(quizList);
+
+      } catch (err) {
+        console.error("Error fetching quizzes and progress:", err);
+        toast.error("Gagal memuat data kuis.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuizzesAndProgress();
+  }, [mapelId, currentUser]);
+  
+  useEffect(() => {
+    if (location.state?.errorMsg) {
+      // Munculkan toast setelah halaman list benar-benar siap mrender
+      toast.error(location.state.errorMsg);
+      
+      // Bersihkan state di URL biar kalau di-refresh, toast-nya gak muncul lagi
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
+  const getQuizCount = (id) => allQuizzes.filter(quiz => quiz.mapel === id).length;
+
+  const subjectsData = [
+    { id: 'mtk', name: 'Matematika', icon: <FaCalculator />, totalQuizzes: getQuizCount('mtk'), color: '#ef4444' },
+    { id: 'ipa', name: 'Ilmu Pengetahuan Alam', icon: <FaFlask />, totalQuizzes: getQuizCount('ipa'), color: '#10b981' },
+    { id: 'ips', name: 'Ilmu Pengetahuan Sosial', icon: <FaEarthAsia />, totalQuizzes: getQuizCount('ips'), color: '#f59e0b' },
+    { id: 'inggris', name: 'Bahasa Inggris', icon: <FaLanguage />, totalQuizzes: getQuizCount('inggris'), color: '#3b82f6' },
+    { id: 'indonesia', name: 'Bahasa Indonesia', icon: <FaFont />, totalQuizzes: getQuizCount('indonesia'), color: '#8b5cf6' }
+  ];
+
+  useEffect(() => {
+    if (mapelId && allQuizzes.length > 0) {
+      const matches = allQuizzes
+        .filter(quiz => quiz.mapel === mapelId)
+        .sort((a, b) => Number(a.themeNumber || 0) - Number(b.themeNumber || 0));
+      
+      setFilteredQuizzes(matches);
+    }
+  }, [mapelId, allQuizzes]);
+
+  const handleSelectSubject = (subject) => {
+    navigate(`/quiz/list/${subject.id}`);
+  };
+
+  // 🔒 LINK BYPASS PROTECTION FUNCTION
+  const handleStartQuiz = (quizData, targetIndex) => {
+    if (targetIndex > completedOrder) {
+      toast.error("🔒 Kuis ini masih terkunci! Selesaikan kuis bab sebelumnya.");
+      return;
+    }
+    navigate(`/quiz/list/${mapelId}/${quizData.id}`);
+  };
+
+  const isListMode = Boolean(mapelId);
+  const activeSubjectData = isListMode ? subjectsData.find(s => s.id === mapelId) : null;
+
+  return (
+    <div className={`${styles.quizWrapperPage} ${mapelId ? styles.fullscreenOverlayMode : ''}`}>
+      {/* 🌟 SUDAH DIPERBAIKI: Menggunakan toastOptions dengan duration otomatis 3 detik */}
+      <Toaster 
+        position="top-center" 
+        reverseOrder={false} 
+        toastOptions={{
+          duration: 3000,
+        }}
+      />
+
+      {!isListMode && (
+        <div className={styles.premiumHeaderSummary}>
+          <div className={styles.xpBalanceBlock}>
+            <div className={styles.xpDisplayRow}>
+              <div className={styles.statBoxItem}>
+                <FaStar className={styles.starIconScore} />
+                <div className={styles.statBoxMeta}>
+                  <span className={styles.xpLabelTitle}>Poin XP</span>
+                  <h5>{currentUser?.xp || 0} XP</h5>
+                </div>
+              </div>
+              <div className={styles.dividerLine} />
+              <div className={styles.statBoxItem}>
+                <FaFire className={styles.fireIconStreak} />
+                <div className={styles.statBoxMeta}>
+                  <span className={styles.xpLabelTitle}>Streak</span>
+                  <h5>3 Hari</h5>
+                </div>
               </div>
             </div>
           </div>
+          <h3 className={styles.sectionHeaderTitle}>Mata Pelajaran Quiz</h3>
         </div>
-      </div>
+      )}
 
-      {/* 🧩 KONTEN UTAMA DENGAN LAYER LEVEL (DIV SEPARASI YANG BISA DI-SCROLL) */}
       <div className={styles.quizMainContentScrollable}>
-        
         {loading ? (
           <div className={styles.loadingStateArea}>
             <FaSpinner className={styles.spinnerLoadingIcon} />
@@ -125,81 +171,75 @@ const QuizPage = () => {
           </div>
         ) : (
           <>
-            {/* ================= LEVEL 0: PILIH MATA PELAJARAN ================= */}
-            {fullscreenLevel === 0 && (
-              <div className={styles.levelZeroContainer}>
-                <div className={styles.sectionTitleArea}>
-                  <h4>Pilih Tantangan Kuis</h4>
-                  <p>Asah kemampuan belajarmu dengan paket latihan soal pilihan ganda.</p>
-                </div>
-
-                <div className={styles.mapelGridContainer}>
-                  {subjectsData.map((mapel) => (
-                    <div 
-                      key={mapel.id} 
-                      className={styles.mapelCardItem}
-                      onClick={() => handleSelectSubject(mapel)}
-                    >
-                      <div 
-                        className={styles.iconCircleBox}
-                        style={{ backgroundColor: `${mapel.color}12`, color: mapel.color }}
-                      >
-                        {mapel.icon}
+            {!isListMode && (
+              <div className={styles.selectionStandardGrid}>
+                <div className={styles.subjectBoxRow}>
+                  {subjectsData.map(sub => (
+                    <div key={sub.id} className={styles.subjectCardRow} onClick={() => handleSelectSubject(sub)}>
+                      <span className={styles.subjectIconBox}>{sub.icon}</span>
+                      <div className={styles.subMetaData}>
+                        <h4>{sub.name}</h4>
+                        <p>{sub.totalQuizzes} paket kuis</p>
                       </div>
-                      <div className={styles.mapelMetaDetails}>
-                        <h3>{mapel.name}</h3>
-                        <p>{mapel.desc}</p>
-                      </div>
-                      <div className={styles.arrowChevronGo}>
-                        <FaChevronRight />
-                      </div>
+                      <FaChevronRight className={styles.arrowChevronRight} />
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* ================= LEVEL 1: LIST PAKET SOAL (DAILY PATHS) ================= */}
-            {fullscreenLevel === 1 && selectedSubject && (
+            {isListMode && activeSubjectData && (
               <div className={styles.levelOneContainer}>
                 <div className={styles.headerNavLevelOne}>
-                  <button 
-                    className={styles.backLevelBtn} 
-                    onClick={() => setFullscreenLevel(0)}
-                  >
+                  <button className={styles.backLevelBtn} onClick={handleGoBack}>
                     <FaArrowLeft /> Kembali
                   </button>
-                  <div className={styles.subjectIndicatorBadge} style={{ color: selectedSubject.color }}>
-                    {selectedSubject.icon} <span>{selectedSubject.name}</span>
+                  <div className={styles.subjectIndicatorBadge}>
+                    {activeSubjectData.icon} <span>{activeSubjectData.name}</span>
                   </div>
                 </div>
 
                 <div className={styles.quizListWrapper}>
                   {filteredQuizzes.length > 0 ? (
-                    filteredQuizzes.map((quiz, idx) => (
-                      <div 
-                        key={quiz.id}
-                        className={styles.chapterQuizItemRow}
-                        onClick={() => handleStartQuiz(`Kuis Bab ${quiz.themeNumber || idx + 1}: ${quiz.theme}`)}
-                      >
-                        <div className={styles.quizLeftMetaBox}>
-                          <div className={styles.quizNumberIndicator}>
-                            Q{quiz.themeNumber || idx + 1}
-                          </div>
-                          <div className={styles.quizTitleMetaTxt}>
-                            <h5>{quiz.theme}</h5>
-                            <span className={styles.quizTargetSub}>Total: {quiz.units?.length || 0} Soal</span>
-                          </div>
-                        </div>
+                    filteredQuizzes.map((quiz, idx) => {
+                      const currentQuizIndex = idx;
+                      const isLocked = currentQuizIndex > completedOrder;
 
-                        <div className={styles.quizRightActionZone}>
-                          <FaChevronRight className={styles.arrowGoQuiz} />
+                      return (
+                        <div 
+                          key={quiz.id}
+                          className={`${styles.chapterQuizItemRow} ${isLocked ? styles.quizItemRowLocked : ''}`}
+                          onClick={() => {
+                            if (isLocked) {
+                              toast.error("Quiz terkunci, silahkan selesaikan quiz sebelumnya!");
+                            } else {
+                              handleStartQuiz(quiz, currentQuizIndex);
+                            }
+                          }}
+                          style={isLocked ? { opacity: 0.55, cursor: 'not-allowed' } : {}}
+                        >
+                          <div className={styles.quizLeftMetaBox}>
+                            <div className={styles.quizNumberIndicator}>
+                              Q{quiz.themeNumber || idx + 1}
+                            </div>
+                            <div className={styles.quizTitleMetaTxt}>
+                              <h5>{quiz.theme}</h5>
+                              <span className={styles.quizTargetSub}>Total: {quiz.units?.length || 0} Soal</span>
+                            </div>
+                          </div>
+                          <div className={styles.quizRightActionZone}>
+                            {isLocked ? (
+                              <FaLock style={{ color: '#94a3b8', fontSize: '0.85rem' }} />
+                            ) : (
+                              <FaChevronRight className={styles.arrowGoQuiz} />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className={styles.emptyStateContainer}>
-                      <p>Belum ada paket kuis dailyPaths tersedia untuk mata pelajaran ini.</p>
+                      <p>Belum ada paket kuis tersedia untuk mata pelajaran ini.</p>
                     </div>
                   )}
                 </div>
@@ -207,7 +247,6 @@ const QuizPage = () => {
             )}
           </>
         )}
-
       </div>
     </div>
   );

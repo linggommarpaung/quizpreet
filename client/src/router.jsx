@@ -2,12 +2,15 @@ import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { GDPRProvider } from './contexts/GDPRContext.jsx';
-import { SocketProvider } from './contexts/SocketContext';
 import App from './App.jsx';
 import Spinner from './components/ui/Spinner';
 import MainLayout from './components/ui/MainLayout';
 import SubNavForum from './components/SubNavForum';
 import AdminLayout from './components/AdminLayout';
+import QuizStart from './components/ui/QuizStart';
+import ArenaByOne from './components/ui/ArenaByOne';
+import ArenaGroup from './components/ui/ArenaGroup';
+import ArenaMatch from './components/ui/ArenaMatch';
 
 // Lazy load page components
 const IndexPage = lazy(() => import('./pages/IndexPage'));
@@ -24,21 +27,17 @@ const ForumPage = lazy(() => import('./pages/ForumPage'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdministratorPage = lazy(() => import('./pages/admin/AdministratorPage'));
 const QuizListPage = lazy(() => import('./pages/admin/QuizListPage'));
-const EditThemePage = lazy(() => import('./pages/EditThemePage'));
 const AddThemePage = lazy(() => import('./pages/AddThemePage'));
 const EditQuestionPage = lazy(() => import('./pages/EditQuestionPage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
-const MaterialPage = lazy(() => import('./pages/MaterialPage'));
+const ShopPage = lazy(() => import('./pages/ShopPage'));
 const MateriListPage = lazy(() => import('./pages/admin/MateriListPage'));
-const MateriSubjectPage = lazy(() => import('./pages/admin/MateriSubjectPage'));
 
 // A wrapper component to provide auth and GDPR context to the app
 const Root = () => (
   <AuthProvider>
     <GDPRProvider>
-      <SocketProvider>
       <App />
-      </SocketProvider>
     </GDPRProvider>
   </AuthProvider>
 );
@@ -106,11 +105,31 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'shop',
+        element: (
+          <RequireAuth>
+            <MainLayout>
+              <ShopPage />
+            </MainLayout>
+          </RequireAuth>
+        ),
+      },
+      {
   path: 'contest/1v1',
   element: (
     <RequireAuth>
       <MainLayout>
         <QuizLobby />
+      </MainLayout>
+    </RequireAuth>
+  ),
+},
+{
+  path: 'contest/1v1/arena/:lobbyId',
+  element: (
+    <RequireAuth>
+      <MainLayout>
+        <ArenaByOne />
       </MainLayout>
     </RequireAuth>
   ),
@@ -121,6 +140,26 @@ export const router = createBrowserRouter([
     <RequireAuth>
       <MainLayout>
         <LobbyGroupPage />
+      </MainLayout>
+    </RequireAuth>
+  ),
+},
+{
+  path: 'contest/group/arena/:roomId',
+  element: (
+    <RequireAuth>
+      <MainLayout>
+        <ArenaGroup />
+      </MainLayout>
+    </RequireAuth>
+  ),
+},
+{
+  path: 'contest/group/arenaMatch/:roomId',
+  element: (
+    <RequireAuth>
+      <MainLayout>
+        <ArenaMatch />
       </MainLayout>
     </RequireAuth>
   ),
@@ -151,6 +190,26 @@ export const router = createBrowserRouter([
           <RequireAuth>
             <MainLayout>
                 <QuizPage />
+            </MainLayout>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'quiz/list/:mapelId',
+        element: (
+          <RequireAuth>
+            <MainLayout>
+                <QuizPage />
+            </MainLayout>
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'quiz/list/:mapelId/:quizId',
+        element: (
+          <RequireAuth>
+            <MainLayout>
+                <QuizStart />
             </MainLayout>
           </RequireAuth>
         ),
@@ -196,14 +255,24 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'materi/:topicId',
+        path: 'forum/list/:subjectId',
         element: (
           <RequireAuth>
             <MainLayout>
-              <MaterialPage />
+              <ForumPage />
             </MainLayout>
           </RequireAuth>
         ),
+      },
+      {
+        path: 'forum/list/:subjectId/:chapterId',
+        element: (
+          <RequireAuth>
+            <MainLayout>
+              <ForumPage />
+            </MainLayout>
+          </RequireAuth>
+          ),
       },
       {
         path: 'admin',
@@ -218,16 +287,11 @@ export const router = createBrowserRouter([
           { path: 'quiz', element: <QuizListPage /> },
           { path: 'quiz/add-theme', element: <AddThemePage /> },
           {
-            path: 'quiz/edit-theme/:themeId',
-            element: <EditThemePage />,
-          },
-          {
             path: 'quiz/edit-question/:themeId/:unitId/:questionId',
             element: <EditQuestionPage />,
           },
           { path: 'setting', element: <SettingsPage /> },
           { path: 'materi', element: <MateriListPage /> },
-          { path: 'materi/:subjectId', element: <MateriSubjectPage /> },
         ],
       },
       { path: '*', element: <Navigate to="/" /> },

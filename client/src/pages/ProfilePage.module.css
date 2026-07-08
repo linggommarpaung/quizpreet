@@ -11,6 +11,7 @@
 
 /* --- SEAMLESS HEADER --- */
 .profileHeader {
+  position: relative;
   text-align: center;
   margin-bottom: 24px;
   margin-top: 4px;
@@ -399,4 +400,48 @@
   .profileContainer {
     padding: 24px 22% 100px 22%;
   }
+}
+
+/* 🛒 STYLING TOMBOL TOKO (Kiri Atas) */
+.shopRedirectBtn {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  color: #475569;
+  font-size: 1.25rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  z-index: 10; 
+}
+
+/* Efek Hover Mode Cerah */
+.shopRedirectBtn:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  transform: translateY(-50%) scale(1.05);
+}
+
+
+:global(.dark) .shopRedirectBtn {
+  background-color: #1e293b !important; 
+  border-color: #334155 !important; 
+  color: #cbd5e1 !important;  
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Efek Hover Mode Gelap */
+:global(.dark) .shopRedirectBtn:hover {
+  background-color: #243146 !important;
+  color: #ffffff !important;
 }

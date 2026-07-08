@@ -1,0 +1,45 @@
+/* client/src/components/ui/SprinkleAnimation.module.css */
+
+.sprinkleContainer {
+  position: fixed; /* Ubah ke fixed agar mengunci penuh satu layar viewport browser */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none; /* Tetap agar klik user tembus ke tombol di bawahnya */
+  z-index: 999; /* Set ke maksimum agar berada di depan modal card! */
+}
+
+.sprinkle {
+  position: absolute;
+  bottom: -20px; 
+  opacity: 0;
+  animation: blastUp 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.leftOrigin {
+  left: 5%;
+}
+
+.rightOrigin {
+  right: 5%;
+}
+
+@keyframes blastUp {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(0);
+    opacity: 1;
+  }
+  10% {
+    opacity: 1;
+    transform: translate(calc(var(--tx) * 0.2), calc(var(--ty) * 0.4)) rotate(calc(var(--rot) * 0.3)) scale(1);
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--tx), calc(var(--ty) + 150px)) rotate(var(--rot)) scale(0.8);
+    opacity: 0;
+  }
+}

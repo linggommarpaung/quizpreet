@@ -35,14 +35,17 @@ export const getUserProgress = async (userId) => {
 
 export const getAllDailyPaths = async () => {
     try {
-        const pathsQuery = query(collection(db, 'dailyPaths'), orderBy('createdAt', 'asc'));
+        const pathsQuery = query(collection(db, 'chapters')); 
         const querySnapshot = await getDocs(pathsQuery);
-        return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return data;
     } catch (error) {
         console.error("Error fetching all daily paths:", error);
         throw error;
     }
 };
+
 
 export const saveUnitCompletion = async (userId, pathId, unitId) => {
     if (!userId || !pathId || !unitId) return;
