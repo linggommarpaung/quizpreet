@@ -14,7 +14,7 @@ import styles from './LobbyGroupPage.module.css';
 import { db } from '../config/firebaseConfig'; 
 import { 
     doc, setDoc, getDoc, updateDoc, onSnapshot, deleteDoc, collection,
-    addDoc, query, orderBy
+    addDoc, query, orderBy, serverTimestamp
 } from 'firebase/firestore';
 
 // 🌐 MENGIKUTI LEADERBOARD: Mendukung efek border avatar toko secara realtime
@@ -125,7 +125,7 @@ useEffect(() => {
     const chatRef = collection(db, 'lobbyGroups', roomId.toUpperCase(), 'chats');
     const q = query(chatRef, orderBy('timestamp', 'asc'));
 
-    // 🔒 Catat waktu saat halaman/lobby pertama kali di-load
+    // 🔒 Catat waktu pertama kali halaman di-load
     const componentLoadTime = Date.now();
 
     const unsubscribeChat = onSnapshot(q, (snapshot) => {
@@ -134,40 +134,47 @@ useEffect(() => {
             lobbyData.gameMode === 'study' || msg.scope === 'all' || (msg.scope === 'team' && msg.senderTeam === myTeam)
         );
 
-        // 🔔 LOGIKA NOTIFIKASI SINKRONISASI
+        // 🔔 LOGIKA NOTIFIKASI SINKRONISASI AKURAT
         if (snapshot.docChanges().length > 0) {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
                     const newMsg = change.doc.data();
                     
-                    // Ambil waktu kirim pesan (convert jika berbentuk serverTimestamp/Object)
+                    // Gunakan toMillis jika dari serverTimestamp, fallback ke nilai mentah angka[span_2](start_span)[span_2](end_span)
                     const msgTime = newMsg.timestamp?.toMillis 
                         ? newMsg.timestamp.toMillis() 
-                        : (newMsg.timestamp || Date.now());
+                        : (Number(newMsg.timestamp) || Date.now());
 
-                    // Khusus mode belajar, jika chat sedang tertutup dan pengirim bukan kita
-                    if (lobbyData.gameMode === 'study' && newMsg.senderUid !== currentUser?.uid && !isChatOpen && msgTime > componentLoadTime) {
-                        setUnreadCount(prev => prev + 1);
+                    if (newMsg.senderUid !== currentUser?.uid && !isChatOpen && msgTime > componentLoadTime) {
+                        if (lobbyData.gameMode === 'study') {
+                            setUnreadCount(prev => prev + 1);
+                        } else if (lobbyData.gameMode === 'competition') {
+                            if (newMsg.scope === 'all' || (newMsg.scope === 'team' && newMsg.senderTeam === myTeam)) {
+                                setUnreadCount(prev => prev + 1);
+                            }
+                        }
                     }
                 }
             });
         }
 
         setMessages(filtered);
-        if (chatEndRef.current) {
-            chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
+        setTimeout(() => {
+            if (chatEndRef.current) {
+                chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+        }, 100);
     });
 
     return () => unsubscribeChat();
-}, [roomId, lobbyData?.gameMode, lobbyData?.teamA, lobbyData?.teamB, currentUser, isChatOpen]); // Tambahkan isChatOpen ke dependency
+}, [roomId, lobbyData?.gameMode, lobbyData?.teamA, lobbyData?.teamB, currentUser, isChatOpen]);
 
-// Sinkronisasi reset notifikasi saat chat dibuka di lobby
+// Sinkronisasi reset mutlak angka notifikasi saat dibaca / panel terbuka[span_3](start_span)[span_3](end_span)
 useEffect(() => {
     if (isChatOpen) {
         setUnreadCount(0);
     }
-}, [isChatOpen]);
+}, [isChatOpen, messages]);
 
 
     // ==================== 🔊 LISTENER 2: HANDSHAKE SIGNALLING WEBRTC ====================
@@ -438,13 +445,14 @@ useEffect(() => {
 
         try {
             const chatRef = collection(db, 'lobbyGroups', roomId.toUpperCase(), 'chats');
+            // 🛠️ FIX URUTAN JAWABAN: Pakai serverTimestamp dari Firestore agar berurutan mutlak[span_4](start_span)[span_4](end_span)
             await addDoc(chatRef, {
                 senderUid: currentUser.uid,
                 senderName: currentUser.displayName || 'Rekan',
                 text: chatInput.trim(),
                 scope: lobbyData.gameMode === 'study' ? 'all' : chatScope,
                 senderTeam: myTeam,
-                timestamp: Date.now()
+                timestamp: serverTimestamp() 
             });
             setChatInput('');
         } catch (err) {
@@ -1000,26 +1008,24 @@ useEffect(() => {
                 </div>
 
                 {/* 💬 KOMPONEN FLOATING CHAT DI DALAM LOBBY */}
-<button 
-    className={arenaStyle.draggableFloatingChatBtn} 
-    style={{ left: chatBtnPos.x, top: chatBtnPos.y, position: 'fixed', zIndex: 1000 }}
-    onPointerDown={handlePointerDown}
-    onPointerMove={handlePointerMove}
-    onPointerUp={handlePointerUp}
-    onClick={() => {
-        if (!isDraggingRef.current) {
-            setIsChatOpen(true);
-            setUnreadCount(0); // Bersihkan notifikasi saat diklik[span_5](start_span)[span_5](end_span)
-        }
-    }}
->
-    <FaCommentDots />
-    {/* 🔴 Rendernya hanya muncul jika dalam mode 'study' dan ada pesan baru[span_6](start_span)[span_6](end_span) */}
-    {lobbyData?.gameMode === 'study' && unreadCount > 0 && (
-        <span className={groupStyle.redBadgeNotification}>{unreadCount}</span>
-    )}
-</button>
-
+                <button 
+                    className={arenaStyle.draggableFloatingChatBtn} 
+                    style={{ left: chatBtnPos.x, top: chatBtnPos.y, position: 'fixed', zIndex: 1000 }}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onClick={() => {
+                        if (!isDraggingRef.current) {
+                            setIsChatOpen(true);
+                            setUnreadCount(0);
+                        }
+                    }}
+                >
+                    <FaCommentDots />
+                    {unreadCount > 0 && (
+                        <span className={groupStyle.redBadgeNotification}>{unreadCount}</span>
+                    )}
+                </button>
 
                 <div className={`${arenaStyle.floatingChatOverlayDrawer} ${isChatOpen ? arenaStyle.chatDrawerOpen : ''}`}>
                     <div className={arenaStyle.sidePanelChatComponent}>
@@ -1027,7 +1033,6 @@ useEffect(() => {
                             <div>
                                 <h3>Obrolan Ruang Tunggu</h3>
                                 <span className={arenaStyle.secretSecurityHint}>
-                                    {/* Menggunakan ?. agar aman saat lobbyData masih null */}
                                     {lobbyData?.gameMode === 'study' ? <><FaGlobe /> Ruang Global</> : (chatScope === 'team' ? <><FaLock /> Internal Tim</> : <><FaGlobe /> Saringan Semua</>)}
                                 </span>
                             </div>
@@ -1036,40 +1041,28 @@ useEffect(() => {
                             </button>
                         </div>
 
-                     <div className={arenaStyle.chatMessagesListContainer}>
-    {messages.map((msg) => {
-        const isMe = msg.senderUid === currentUser?.uid;
+                        <div className={arenaStyle.chatMessagesListContainer}>
+                            {messages.map((msg) => {
+                                const isMe = msg.senderUid === currentUser?.uid;
 
-        // 🌟 JIKA MODE BELAJAR: Pakai style melengkung cantik dari ArenaGroup (groupStyle)
-        if (lobbyData?.gameMode === 'study') {
-            return (
-                <div 
-                    key={msg.id} 
-                    className={`${groupStyle.messageBubble} ${isMe ? groupStyle.msgSent : groupStyle.msgReceived}`}
-                    style={{ display: 'flex', flexDirection: 'column', marginBottom: '8px' }}
-                >
-                    {!isMe && <span className={groupStyle.senderName}>{msg.senderName}</span>}
-                    <div className={arenaStyle.msgBodyText}>{msg.text}</div>
-                </div>
-            );
-        }
-
-        // 🛡️ JIKA MODE KOMPETISI: Biarkan tetap menggunakan style ArenaMatch (arenaStyle) yang sudah aman
-        return (
-            <div 
-                key={msg.id} 
-                className={`${arenaStyle.msgBubbleRow} ${isMe ? arenaStyle.bubbleSent : arenaStyle.bubbleReceived} ${msg.scope === 'all' ? arenaStyle.bubbleScopeAll : ''}`}
-            >
-                <span className={arenaStyle.msgNameTitleLabel}>
-                    {msg.senderName} `(${msg.scope === 'all' ? 'SEMUA' : `TIM ${msg.senderTeam}`})`
-                </span>
-                <div className={arenaStyle.msgBodyText}>{msg.text}</div>
-            </div>
-        );
-    })}
-    <div ref={chatEndRef} />
-</div>
-
+                                // 🌟 KEDUA MODE MENGGUNAKAN DESAIN BUBBLE MELENGKUNG CANTIK DARI ARENAGROUP[span_5](start_span)[span_5](end_span)[span_6](start_span)[span_6](end_span)
+                                return (
+                                    <div 
+                                        key={msg.id} 
+                                        className={`${groupStyle.messageBubble} ${isMe ? groupStyle.msgSent : groupStyle.msgReceived}`}
+                                        style={{ display: 'flex', flexDirection: 'column', marginBottom: '8px' }}
+                                    >
+                                        {!isMe && (
+                                            <span className={groupStyle.senderName}>
+                                                {msg.senderName} {lobbyData?.gameMode === 'competition' ? `(${msg.scope === 'all' ? 'SEMUA' : `TIM ${msg.senderTeam}`})` : ''}
+                                            </span>
+                                        )}
+                                        <div className={arenaStyle.msgBodyText}>{msg.text}</div>
+                                    </div>
+                                );
+                            })}
+                            <div ref={chatEndRef} />
+                        </div>
 
                         <form className={arenaStyle.chatInputFlexForm} onSubmit={handleSendChatMessage}>
                             {lobbyData?.gameMode === 'competition' && (

@@ -1,19 +1,173 @@
-.pdfReaderCanvasFrame { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+/* client/src/components/ui/PdfMateriReader.module.css */
 
-.pdfRealContainerStyle { flex: 1; display: flex; align-items: center; justify-content: center; background-color: #cbd5e1; border-radius: 12px; overflow: hidden; position: relative; }
-:global([data-theme='dark']) .pdfRealContainerStyle, :global(.dark) .pdfRealContainerStyle { background-color: #334155; }
+.pdfReaderCanvasFrame { 
+    display: flex; 
+    flex-direction: column; 
+    height: 100%; 
+    overflow: hidden; 
+}
+
+.pdfRealContainerStyle { 
+    flex: 1; 
+    display: flex; 
+    align-items: center;    
+    justify-content: center; 
+    background-color: #cbd5e1; 
+    border-radius: 12px; 
+    position: relative; 
+    padding: 24px;
+    box-sizing: border-box;
+    
+    /* Mengaktifkan area geser dua arah yang aman tanpa kepotong */
+    overflow: auto; 
+    touch-action: pan-x pan-y; 
+    -webkit-overflow-scrolling: touch; 
+}
+
+:global([data-theme='dark']) .pdfRealContainerStyle, :global(.dark) .pdfRealContainerStyle { 
+    background-color: #334155; 
+}
+
+/* 🌟 EXTENDER AREA SCROLL: Menjamin ujung atas dan kiri kertas tidak terpotong */
+.pdfScrollViewportExpander {
+    display: block;
+    position: relative;
+    margin: auto; 
+    flex-shrink: 0;
+}
+
+/* 🌟 STRUKTUR LEMBARAN KERTAS A5 */
+.pdfA5PaperWrapper {
+    position: absolute;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
+    background-color: #ffffff;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; 
+    will-change: transform, left, top;
+}
+
+.pdfA5PaperWrapper :global(.react-pdf__Page),
+.pdfA5PaperWrapper :global(.react-pdf__Page__canvas) {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+}
 
 .spinnerIconAnim { animation: spin 1s linear infinite; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
 
-.pdfActionBottomControls { display: flex; align-items: center; justify-content: space-between; padding: 10px 4px 4px 4px; margin-top: auto; flex-shrink: 0; }
+.pdfMetaInfoToolbarRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+    margin-top: 10px;
+    margin-bottom: 2px;
+}
 
-.controlNavPdfBtn { background-color: #ffffff; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #334155; cursor: pointer; }
-:global([data-theme='dark']) .controlNavPdfBtn, :global(.dark) .controlNavPdfBtn { background-color: #1e293b; border-color: #334155; color: #cbd5e1; }
+.pageDisplayNumberLabel {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-muted, #475569);
+    margin: 0;
+}
+
+.zoomActionControlGroup {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 2px 4px;
+    border-radius: 8px;
+    gap: 8px;
+}
+
+:global(.dark) .zoomActionControlGroup {
+    background-color: #1e293b;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.zoomMiniBtn {
+    background: transparent;
+    border: none;
+    color: #475569;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.1s;
+}
+
+.zoomMiniBtn:hover {
+    background-color: #e2e8f0;
+}
+
+:global(.dark) .zoomMiniBtn { color: #94a3b8; }
+:global(.dark) .zoomMiniBtn:hover { background-color: #334155; }
+
+.scalePercentBadge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #334155;
+    min-width: 38px;
+    text-align: center;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.scalePercentBadge:hover {
+    background-color: #cbd5e1;
+    color: #1e293b;
+}
+
+:global(.dark) .scalePercentBadge:hover {
+    background-color: #334155;
+    color: #ffffff;
+}
+
+.pdfActionBottomControls { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    padding: 10px 4px 4px 4px; 
+    margin-top: auto; 
+    flex-shrink: 0; 
+}
+
+.controlNavPdfBtn { 
+    background-color: #ffffff; 
+    border: 1px solid #e2e8f0; 
+    padding: 8px 16px; 
+    border-radius: 8px; 
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    color: #334155; 
+    cursor: pointer; 
+}
+
+:global([data-theme='dark']) .controlNavPdfBtn, :global(.dark) .controlNavPdfBtn { 
+    background-color: #1e293b; 
+    border-color: #334155; 
+    color: #cbd5e1; 
+}
+
 .controlNavPdfBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.timerBadgeAlert { background-color: #fff7ed; border: 1px solid #ffedd5; color: #ea580c; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; gap: 6px; }
-:global([data-theme='dark']) .timerBadgeAlert, :global(.dark) .timerBadgeAlert { background-color: #431407; border-color: #7c2d12; color: #fdba74; }
-
-.nextStepActionOrangeBtn { background-color: #ea580c; border: none; color: #ffffff; padding: 8px 16px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
-.nextStepActionOrangeBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.timerBadgeAlert { 
+    background-color: #fff7ed; 
+    border: 1px solid #ffedd5; 
+    color: #ea580c; 
+    padding: 6px 14px; 
+    border-radius: 20px; 
+    font-size: 0.75rem;
+    font-weight: 600;
+}

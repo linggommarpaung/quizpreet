@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../config/firebaseConfig';
 import { 
-    doc, onSnapshot, collection, updateDoc, deleteDoc, addDoc, orderBy, query 
+    doc, onSnapshot, collection, updateDoc, deleteDoc, addDoc, orderBy, query, serverTimestamp 
 } from 'firebase/firestore';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fa6';
 import html2canvas from 'html2canvas';
 import styles from './ArenaMatch.module.css';
+import groupStyle from './ArenaGroup.module.css';
 
 const ArenaMatch = () => {
     const { roomId } = useParams();
@@ -31,6 +32,7 @@ const ArenaMatch = () => {
     const [chatInput, setChatInput] = useState('');
     const [chatScope, setChatScope] = useState('team'); 
     const [messages, setMessages] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
     const chatEndRef = useRef(null);
     const modalCaptureRef = useRef(null);
 
@@ -170,26 +172,61 @@ const ArenaMatch = () => {
         return () => clearInterval(interval);
     }, [lobbyData?.currentTimerValue, lobbyData?.phase, isCaptain, myTeam, roomId]);
 
-    // ==================== 💬 3. ENGINE CHAT SYNC ====================
+        // ==================== 💬 3. ENGINE CHAT SYNC & NOTIFIKASI ====================
     useEffect(() => {
         if (!roomId || !myTeam) return;
 
         const chatRef = collection(db, 'lobbyGroups', roomId.toUpperCase(), 'chats');
         const q = query(chatRef, orderBy('timestamp', 'asc'));
 
+        // 🔒 Catat waktu saat komponen arena ini pertama kali dimuat
+        const componentLoadTime = Date.now();
+
         const unsubscribeChat = onSnapshot(q, (snapshot) => {
             const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const filtered = msgs.filter(msg => 
                 msg.scope === 'all' || (msg.scope === 'team' && msg.senderTeam === myTeam)
             );
-            setMessages(filtered);
-            if (chatEndRef.current) {
-                chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+
+            // 🔔 LOGIKA PENGHITUNG NOTIFIKASI MASUK SECARA REALTIME
+            if (snapshot.docChanges().length > 0) {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === 'added') {
+                        const newMsg = change.doc.data();
+                        
+                        // Ekstrak timestamp milidetik dari server atau lokal fallback
+                        const msgTime = newMsg.timestamp?.toMillis 
+                            ? newMsg.timestamp.toMillis() 
+                            : (Number(newMsg.timestamp) || Date.now());
+
+                        // Pemicu notifikasi: Bukan ketikan kita, panel tertutup, dan chat dikirim setelah masuk arena
+                        if (newMsg.senderUid !== currentUser?.uid && !isChatOpen && msgTime > componentLoadTime) {
+                            if (newMsg.scope === 'all' || (newMsg.scope === 'team' && newMsg.senderTeam === myTeam)) {
+                                setUnreadCount(prev => prev + 1);
+                            }
+                        }
+                    }
+                });
             }
+
+            setMessages(filtered);
+            setTimeout(() => {
+                if (chatEndRef.current) {
+                    chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 100);
         });
 
         return () => unsubscribeChat();
-    }, [roomId, myTeam]);
+    }, [roomId, myTeam, isChatOpen, currentUser]);
+
+    // Sinkronisasi otomatis untuk mereset angka notifikasi saat panel dibuka
+    useEffect(() => {
+        if (isChatOpen) {
+            setUnreadCount(0);
+        }
+    }, [isChatOpen, messages]);
+
 
     // ==================== 🖱️ 4. HANDLER DRAG TOMBOL CHAT MELAYANG ====================
     const handlePointerDown = (e) => {
@@ -363,25 +400,26 @@ const ArenaMatch = () => {
         }
     };
 
-    const handleSendChatMessage = async (e) => {
-        e.preventDefault();
-        if (!chatInput.trim() || !roomId || !myTeam) return;
+     const handleSendChatMessage = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !roomId || !myTeam) return;
 
-        try {
-            const chatRef = collection(db, 'lobbyGroups', roomId.toUpperCase(), 'chats');
-            await addDoc(chatRef, {
-                senderUid: currentUser.uid,
-                senderName: currentUser.displayName || 'Rekan',
-                text: chatInput.trim(),
-                scope: chatScope,
-                senderTeam: myTeam,
-                timestamp: Date.now()
-            });
-            setChatInput('');
-        } catch (err) {
-            console.error(err);
-        }
-    };
+    try {
+        const chatRef = collection(db, 'lobbyGroups', roomId.toUpperCase(), 'chats');
+        await addDoc(chatRef, {
+            senderUid: currentUser.uid,
+            senderName: currentUser.displayName || 'Rekan',
+            text: chatInput.trim(),
+            scope: chatScope,
+            senderTeam: myTeam,
+            timestamp: serverTimestamp() // 🌟 Sekarang baris ini aman digunakan!
+        });
+        setChatInput('');
+    } catch (err) {
+        console.error(err);
+    }
+};
+
 
     // Pemicu Tangkapan Layar Card Menjadi PNG / JPG untuk Share
     const handleExportCardToImage = async () => {
@@ -590,17 +628,27 @@ const ArenaMatch = () => {
                 </div>
             </div>
 
-            {/* 💬 TOMBOL CHAT NGAMBANG DRAGGABLE */}
+         {/* 💬 TOMBOL CHAT NGAMBANG DRAGGABLE */}
             <button 
                 className={styles.draggableFloatingChatBtn}
                 style={{ left: chatBtnPos.x, top: chatBtnPos.y }}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
-                onClick={() => !isDraggingRef.current && setIsChatOpen(true)}
+                onClick={() => {
+                    if (!isDraggingRef.current) {
+                        setIsChatOpen(true);
+                        setUnreadCount(0); // Bersihkan notif seketika saat diklik
+                    }
+                }}
             >
                 <FaCommentDots />
+                {/* 🔴 BADGE NOTIFIKASI MERAH SINKRONISASI ARENA */}
+                {unreadCount > 0 && (
+                    <span className={groupStyle.redBadgeNotification}>{unreadCount}</span>
+                )}
             </button>
+
 
             {/* 💬 SLIDE DRAWER OVERLAY CHAT (Layout Flex Anti-Tenggelam Keyboard) */}
             <div className={`${styles.floatingChatOverlayDrawer} ${isChatOpen ? styles.chatDrawerOpen : ''}`}>

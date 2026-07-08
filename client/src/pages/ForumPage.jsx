@@ -19,6 +19,7 @@ import ChapterList from '../components/ui/ChapterList';
 import PdfMateriReader from '../components/ui/PdfMateriReader';
 import LatihanSoalSection from '../components/ui/LatihanSoalSection';
 import ChatDashboardSection from '../components/ui/ChatDashboardSection';
+import AiTutorSection from '../components/ui/AiTutorSection';
 import Spinner from '../components/ui/Spinner'; // Pastikan Spinner di-import agar tidak crash!
 
 import { 
@@ -64,6 +65,7 @@ const ForumPage = () => {
   // STATE MANAGEMENT TIMER PDF
   const [pdfPage, setPdfPage] = useState(1);
   const [numPages, setNumPages] = useState(null); 
+  const [pdfScale, setPdfScale] = useState(1.0);
   const [pageTimers, setPageTimers] = useState({}); 
   const [unlockedPages, setUnlockedPages] = useState({}); 
   const [canNextPdf, setCanNextPdf] = useState(false);
@@ -620,6 +622,8 @@ const ForumPage = () => {
                         canNextPdf={canNextPdf}
                         setPdfPage={setPdfPage}
                         setActiveMateriSubTab={setActiveMateriSubTab}
+                     scale={pdfScale}
+                     setScale={setPdfScale}
                       />
                     )}
 
@@ -679,6 +683,9 @@ const ForumPage = () => {
               }}
             />
           )}
+          {activeTab === 'ai' && (
+    <AiTutorSection />
+  )}
         </div>
       )}
 
